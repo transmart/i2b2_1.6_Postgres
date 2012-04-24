@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	$Id: build.xml,v 1.21 2010/03/22 15:52:46 rk903 Exp $
+-->
+<project basedir="." default="all" name="Ontology Cell">
+
+	
+	<property name="Project" value="edu.harvard.i2b2.ontology" />
+
+	<property file="etc/spring/ontology_application_directory.properties"/>
+	
+	<!-- ========== Executable Targets ======================================== -->
+	<property name="Name" value="Ontology" />
+	<import file="../edu.harvard.i2b2.common/common_build.xml" />
+
+	<!-- =================================================================== -->
+	<!-- 								INIT 								 -->
+	<!-- =================================================================== -->
+	<target name="init" depends="common_init,common-classpath" description="Prepare for build">
+		<path id="classpath">
+			<path refid="common-classpath" />
+			<pathelement location="${classes}" />
+			<pathelement location="../${i2b2CommonProject}/dist/i2b2Common-core.jar" />
+		</path>
+
+		<taskdef name="xjc" classname="com.sun.tools.xjc.XJCTask">
+			<classpath refid="classpath" />
+		</taskdef>
+
+	</target>
+
+
+
+	<!-- =================================================================== -->
+	<!-- 								CLEAN 								 -->
+	<!-- =================================================================== -->
+	<target name="clean" depends="common_clean" description="Clean all build products" />
+
+
+	<!-- =================================================================== -->
+	<!-- 								COMMON JAXB GENERATION 				 -->
+	<!-- =================================================================== -->
+	<target name="jaxb_gen" depends="init" description="Generate JAXB classes for i2b2 and Vocab Data messages">
+				<xjc destdir="${gensrc}" removeOldOutput="no">
+					<schema dir="../${i2b2xmlproject}/xsd/cell/ont_1.1" includes="ONT_QRY.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/cell/ont_1.1" includes="ONT_RESP.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/cell/pm_1.1" includes="PM_USER.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/hive/msg_1.1" includes="i2b2_response.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/cell/fr_1.0" includes="FR_QRY.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/cell/crc/loader_1.1" includes="CRC_UPLOADER_QRY.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/cell/crc/psm_1.1" includes="CRC_PSM_QRY.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/cell/crc/psm_1.1" includes="CRC_PSM_QRY_analysis_definition.xsd.xsd" />
+					<schema dir="../${i2b2xmlproject}/xsd/cell/crc/psm_1.1" includes="CRC_PSM_QRY_query_definition.xsd" />
+						
+					<binding dir="." includes="etc/xsd_1.1/i2b2_vdo_bindings.xjb" />
+			<!--		<binding dir="." includes="etc/xsd_1.1/i2b2_rspdo_bindings.xjb" />  -->
+					<binding dir="." includes="etc/xsd_1.1/i2b2_response_message_bindings.xjb" />
+					<binding dir="." includes="etc/xsd_1.1/i2b2_pm_bindings.xjb" />
+					<binding dir="." includes="etc/xsd_1.1/i2b2_fr_bindings.xjb" />
+					<binding dir="." includes="etc/xsd_1.1/i2b2_crcloader_bindings.xjb" />
+					<binding dir="." includes="etc/xsd_1.1/i2b2_crc_psm_bindings.xjb" />
+					<binding dir="." includes="etc/xsd_1.1/i2b2_psm_analysisdefinition_bindings.xjb" />
+					<binding dir="." includes="etc/xsd_1.1/i2b2_psm_querydefinition_bindings.xjb" />
+				</xjc>
+		</target>
+
+	<!-- =================================================================== -->
+	<!-- 								COMPILE 							 -->
+	<!-- =================================================================== -->
+	<target name="compile" depends="init,jaxb_gen" description="Compile files without cleaning">
+		<mkdir dir="${classes}" />
+		<javac destdir="${classes}" optimize="${javac.opt}" debug="${javac.debug}">
+			<src path="${src}/core" />
+			<src path="${gensrc}" />
+		<!--	<src path="${src}/test" />  -->
+			<classpath refid="classpath" />
+		</javac>
+	</target>
+
+
+	<!-- =================================================================== -->
+	<!-- 								DIST 								 -->
+	<!-- =================================================================== -->
+	<target name="dist"  description="package application for distribution/deployment">
+		<echo message="${Name}: Creating the archive package!" />
+		<antcall target="axis2aar" />
+		<antcall target="jar_core" />
+		<antcall target="dist-server" />
+	</target>
+	
+	<!-- Axis2 archive file -->
+	<target name="axis2aar" depends="compile" description="Create Axis2 archive file">
+		<jar compress="true" jarfile="${dist}/${Name}.aar">
+			<fileset dir="${classes}">
+				<include name="**/**" /> 
+				<exclude name="**/datavo/**" />
+			</fileset>
+			<zipfileset dir="${etc}/axis2/" prefix="META-INF" includes="services.xml" />
+			<zipfileset dir="../${i2b2CommonProject}/dist/" prefix="lib" includes="*.jar"/>
+						
+		</jar>
+	</target>
+	<!-- Jar core file -->
+	<target name="jar_core" depends="compile" description="Create Ont core jar">
+		<jar compress="true" jarfile="${dist}/${Name}-core.jar">
+			<fileset dir="${classes}">
+				<include name="**/datavo/**" />
+				</fileset> 
+			<zipfileset dir="${etc}/axis2/" prefix="META-INF" includes="services.xml" />
+		</jar> 
+		</target>
+
+	<!-- =================================================================== -->
+	<!-- 								SERVER DIST							 -->
+	<!-- =================================================================== -->
+	<target name="dist-server"  description="package application for distribution/deployment">
+		<echo message="${Name}: Creating the server archive package!" />
+		<jar compress="true" jarfile="${dist}/${Name}-Server.jar">
+			<fileset dir="${etc}/spring">
+				<include name="**" />
+			</fileset>
+		</jar>
+	</target>
+
+	
+	<!-- =================================================================== -->
+	<!-- 								ALL 								 -->
+	<!-- =================================================================== -->
+	<target name="all" depends="dist">
+	</target>
+	
+	<!-- =================================================================== -->
+	<!-- 								JBOSS DEPLOY 						 -->
+	<!-- =================================================================== -->
+	<target name="deploy"  description="Deployment step:copy distribution jar files to app server">
+			<echo message="${Name}: Copying archive package to app server ${jboss.home}" />
+			<copy todir="${jboss.home}/server/default/deploy">
+				<fileset dir="${dist}">
+					<exclude name="**/**.aar" />
+					<exclude name="**/*client.jar"/>
+				</fileset>
+			</copy>
+			
+			<copy todir="${jboss.home}/server/default/deploy">
+				<fileset dir="${etc}/jboss">
+				<!--	<exclude name="**/jboss.xml" /> -->
+				</fileset>
+			</copy>
+			
+			<copy todir="${jboss.home}/server/default/deploy/${axis2.war.name}/WEB-INF/services">
+				<fileset dir="${dist}">
+					<include name="**/**.aar" />
+				</fileset>
+			</copy>
+			
+			<echo message="copying property files to ${edu.harvard.i2b2.ontology.applicationdir}"/>
+			<copy todir="${edu.harvard.i2b2.ontology.applicationdir}">
+				<fileset dir="${etc}/spring">
+					<exclude name="ontology_application_directory.properties" />
+				</fileset>
+			</copy>
+		</target>
+		
+	<!-- =================================================================== -->
+	<!-- 								JBOSS DEPLOY ARCHIVE ONLY						 -->
+	<!-- =================================================================== -->	<target name="service_deploy">
+		<echo message="${Name}: Copying archive package to app server ${jboss.home}" />
+		<copy todir="${jboss.home}/server/default/deploy">
+			<fileset dir="${dist}">
+				<exclude name="**/**.aar" />
+				<exclude name="**/*client.jar"/>
+			</fileset>
+		</copy>
+		<!-- copy axis archive files to axis directory -->
+		<copy todir="${jboss.home}/server/default/deploy/${axis2.war.name}/WEB-INF/services">
+			<fileset dir="${dist}">
+				<include name="**/**.aar" />
+			</fileset>
+		</copy>
+	</target>
+
+	<!-- ==================================================================== -->
+	<!-- 								WSDL Sample							  -->
+	<!-- ==================================================================== -->
+	<target name="axis2_wsdl_sample_aar" depends="compile" description="">
+		<jar compress="true" jarfile="${dist}/${Name}_wsdl_sample.aar">
+			<fileset dir="${classes}">
+				<include name="**/wsdl/**" />
+				<include name="**/ws/**" />
+			</fileset>
+			<zipfileset dir="${src}/sample/resources/" prefix="META-INF" includes="services.xml" />
+			<zipfileset dir="${src}/sample/resources/" prefix="META-INF" includes="OntologySoapService.wsdl" />
+			<zipfileset dir="../${i2b2CommonProject}/dist/" prefix="lib" includes="*.jar"/>
+						
+		</jar>
+	</target>
+
+	<!-- ==================================================================== -->
+	<!-- 								Test Client							  -->
+	<!-- ==================================================================== -->
+	<target name="run_client" depends="compile" description="To test service, run REST and SOAP client">
+		<!-- run rest client -->
+		<echo message="Running RESTClient .. " />
+		<java classname="edu.harvard.i2b2.ontology.ws.OntologyServiceRESTTest" fork="true" failonerror="true" maxmemory="128m">
+			<arg value="-h" />
+			<classpath refid="classpath" />
+		</java>
+
+		<!-- run soap client 
+		<echo message="Running SoapClient .. " />
+		<java classname="edu.harvard.i2b2.ontology.ws.wsdl.OntologySoapClient" fork="true" failonerror="true" maxmemory="128m">
+			<arg value="-h" />
+			<classpath refid="classpath" />
+			</java>-->
+		
+	</target>
+
+	<!-- ==================================================================== -->
+	<!-- 							Tomcat	start						  	  -->
+	<!-- ==================================================================== -->
+	<target name="tomcat-start" description="Start tomcat">
+		<fail unless="tomcat.home" message="You need to specify the Tomcat home: -Dtomcat.home=c:/tomcat or use build.properties" />
+		<java jar="${tomcat.home}/bin/bootstrap.jar" fork="true">
+			<jvmarg value="-Dcatalina.home=${tomcat.home}" />
+		</java>
+	</target>
+
+	<!-- ==================================================================== -->
+	<!-- 							Tomcat	stop						      -->
+	<!-- =================================================================    -->
+	<target name="tomcat-stop" description="Stop tomcat">
+		<fail unless="tomcat.home" message="You need to specify the Tomcat home: -Dtomcat.home=c:/tomcat or use build.properties" />
+		<java jar="${tomcat.home}/bin/bootstrap.jar" fork="true">
+			<jvmarg value="-Dcatalina.home=${tomcat.home}" />
+			<arg line="stop" />
+		</java>
+	</target>
+
+	<!-- ==================================================================== -->
+	<!-- 							Tomcat	Deploy						  	  -->
+	<!-- ==================================================================== -->
+	<!-- Before running this target, make sure Tomcat is stopped -->
+	<target name="tomcat-deploy" depends="dist" description="Deploy Axis2 archive and its dependend files to tomcat. 
+					Before running this target, make sure Tomcat is stopped">
+		<fail unless="tomcat.home" message="You need to specify the Tomcat home: -Dtomcat.home=c:/tomcat or use build.properties" />
+		<property name="axis2lib.dir" value="${tomcat.home}/webapps/axis2/WEB-INF/lib" />
+		<property name="axis2service.dir" value="${tomcat.home}/webapps/axis2/WEB-INF/services" />
+		<property name="i2b2common.dir" value="../${i2b2CommonProject}/" />
+		<property name="i2b2commonjaxb.dir" value="${i2b2common.dir}/lib/jaxb/" />
+
+		<copy todir="${axis2lib.dir}" file="dist/Ontology-core.jar" overwrite="yes" />
+		<!--
+		<copy todir="${axis2lib.dir}" file="${i2b2common.dir}/dist/i2b2Common-Core.jar" overwrite="yes" />
+		-->
+		<copy todir="${axis2lib.dir}">
+			<fileset dir="${i2b2commonjaxb.dir}">
+				<exclude name="jaxb1*.jar" />
+				<exclude name="jsr*.jar" />
+			</fileset>
+		</copy>
+		<copy todir="${axis2service.dir}">
+			<fileset dir="${dist}">
+				<include name="**/*.aar" />
+			</fileset>
+		</copy>
+	</target>
+
+</project>
+
+
+<!-- *********************************************************************
+	$Log: build.xml,v $
+	Revision 1.21  2010/03/22 15:52:46  rk903
+	crc uploader jaxb added
+	
+	Revision 1.20  2010/03/18 18:47:05  rk903
+	fr added to datavo
+	
+	Revision 1.19  2008/09/18 17:52:28  lcp5
+	server-deploy  target (aar only)
+	
+	Revision 1.18  2008/02/11 17:51:40  lcp5
+	jboss/mulitple jndi datasources changes
+	
+	Revision 1.17  2008/01/08 15:52:58  lcp5
+	removed dashes from a comment
+	
+	Revision 1.16  2007/12/14 16:25:34  lcp5
+	Fixed bug for getCategories case with no role assigned to user.
+	Throws an exception.
+	
+	Fixed build file; commented out  i2b2_rspdo_bindings.xjb
+	Its not necessary and it was causing compile error at UTexasHouston.
+	
+	Revision 1.15  2007/11/09 16:10:52  rk903
+	Issue ID:11 packaging change to deploy i2b2-common.jar inside a aar file
+	
+	Revision 1.14.2.2  2007/11/02 14:22:30  rk903
+	changes to support seperate cell deployment
+	
+	Revision 1.14.2.1  2007/11/02 14:19:46  rk903
+	changes to support seperate cell deployment
+	
+	Revision 1.14  2007/10/08 18:37:15  lcp5
+	changed default setting to match installation guide
+	
+	Revision 1.13  2007/08/28 18:44:20  lcp5
+	PM 1.1 messaging changes
+	
+	Revision 1.12  2007/08/23 19:40:25  lcp5
+	1.1 message generation
+	
+	Revision 1.11  2007/07/25 20:29:01  rk903
+	reading axis2.war folder via build.properties
+	
+	Revision 1.10  2007/05/22 16:20:42  rk903
+	reading property file
+	
+	Revision 1.9  2007/05/22 16:11:29  rk903
+	deploy target added
+	
+	Revision 1.8  2007/04/27 14:15:46  rk903
+	a)added server dist target
+	b)added cvs log
+	
+*************************************************************************  -->

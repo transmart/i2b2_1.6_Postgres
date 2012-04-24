@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:map="http://www.i2b2.org/xsd/cell/ontmap/1.1/"
+    targetNamespace="http://www.i2b2.org/xsd/cell/ontmap/1.1/">
+
+    <xs:include schemaLocation="./MAP_QRY.xsd"/>
+     
+ 
+    <xs:element name="mappings" type="map:mappingsType"/>
+ 
+   <xs:complexType name="mappingsType">
+        <xs:sequence>
+            <xs:element name="mapping" type="map:mapType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    
+</xs:schema>

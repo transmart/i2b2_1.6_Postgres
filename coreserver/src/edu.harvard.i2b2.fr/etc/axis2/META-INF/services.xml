@@ -1,0 +1,16 @@
+
+<service name="FRService">
+    <description>
+        This is a Web Service for edu.harvard.i2b2.fr
+    </description>
+    		<parameter name="enableSwA" locked="false">true</parameter>
+    <parameter name="ServiceClass" locked="false">edu.harvard.i2b2.fr.ws.ProviderRestService</parameter>
+    <operation name="sendfileRequest">
+        <messageReceiver class="org.apache.axis2.receivers.RawXMLINOutMessageReceiver"/>
+    </operation>
+    <operation name="recvfileRequest">
+        <messageReceiver class="org.apache.axis2.receivers.RawXMLINOutMessageReceiver"/>
+    </operation>
+    
+</service>
+

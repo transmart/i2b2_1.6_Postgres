@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:map="http://www.i2b2.org/xsd/cell/ontmap/1.1/"
+    targetNamespace="http://www.i2b2.org/xsd/cell/ontmap/1.1/">
+    
+
+    <xs:element name="get_mapping_by_basecode" type="map:getMappingsType"/>
+
+    
+    
+    <xs:complexType name="getMappingsType">
+        <xs:sequence>
+            <xs:element name="mapping" type="map:mapType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+    
+	<xs:complexType name="mapType">
+        <xs:sequence>
+            <xs:element name="source_coding_system" type = "xs:string"/>
+            <xs:element name="source_basecode" type = "xs:string"/>
+ 			 <xs:element name="destination_coding_system" type="xs:string"/>
+ 			 <xs:element name="destination_basecode" type="xs:string"/>
+ 			 <xs:element name="destination_name" type="xs:string"/>
+        </xs:sequence>
+    </xs:complexType>
+    
+
+ <!--    <xs:complexType name="get_mapType">
+        <xs:sequence>
+            <xs:element name="basecode" type="xs:string"/>              
+            <xs:element name="source_coding_system" type="xs:string"/>
+            <xs:element name="dest_coding_system" type="xs:string"/>
+        </xs:sequence>
+    </xs:complexType>
+ -->   
+ 
+</xs:schema>

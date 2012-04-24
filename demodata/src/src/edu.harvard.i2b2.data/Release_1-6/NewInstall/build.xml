@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+$Id: data_build.xml,v 1.5 2010/06/04 15:33:06 lcp5 Exp $
+-->
+<project name="i2b2 Data setup" basedir=".">
+	<property environment="env" />
+	<property file="db.properties" />
+
+	<!-- =================================================================== -->
+	<!-- 			DATBASE PROPERTIES SETUP					 			 -->
+	<!-- =================================================================== -->	
+	<target name="setup_db_properties">
+		<echo message="-----------Setting property values in db.properties-----------" />	
+		<replace dir="." replacefilterfile="db.properties">			
+			<include name="*\db.properties"/>				
+		</replace>				
+	</target>
+	
+	<target name="load_pmdata">
+		<echo message="-----------------Loading Project Management data-----------------" />		
+		<subant target="db_cleandata_release_1-6">
+			<property file="Pmdata\db.properties" />
+			<fileset dir="Pmdata" includes="data_build.xml" />
+		</subant>	
+		<subant target="create_pmdata_tables_release_1-6">
+			<property file="Pmdata\db.properties" />
+			<fileset dir="Pmdata" includes="data_build.xml" />
+		</subant>	
+		<subant target="create_triggers_release_1-6">
+			<property file="Pmdata\db.properties" />
+			<fileset dir="Pmdata" includes="data_build.xml" />
+		</subant>	
+		<subant target="db_pmdata_load_data">
+			<property file="Pmdata\db.properties" />
+			<fileset dir="Pmdata" includes="data_build.xml" />
+		</subant>			
+	</target>
+	
+	<target name="load_hivedata">
+		<echo message="-----------------Loading Hive data-----------------" />				
+		<subant target="db_cleandata_release_1-6">
+			<property file="Hivedata\db.properties" />
+			<fileset dir="Hivedata" includes="data_build.xml" />
+		</subant>	
+		<subant target="create_hivedata_tables_release_1-6">
+			<property file="Hivedata\db.properties" />
+			<fileset dir="Hivedata" includes="data_build.xml" />
+		</subant>		
+		<subant target="db_hivedata_load_data">
+			<property file="Hivedata\db.properties" />
+			<fileset dir="Hivedata" includes="data_build.xml" />
+		</subant>		
+	</target>
+	
+	<target name="load_metadata">
+		<echo message="-----------------Loading Metadata module-----------------" />		
+		<subant target="db_cleandata_release_1-6">
+			<property file="Metadata\db.properties" />
+			<fileset dir="Metadata" includes="data_build.xml" />
+		</subant>	
+		<subant target="create_metadata_tables_release_1-6">
+			<property file="Metadata\db.properties" />
+			<fileset dir="Metadata" includes="data_build.xml" />
+		</subant>	
+		<subant target="db_metadata_load_data">
+			<property file="Metadata\db.properties" />
+			<fileset dir="Metadata" includes="data_build.xml" />
+		</subant>			
+	</target>
+	
+	<target name="load_demodata">
+		<echo message="-----------------Loading Demodata module-----------------" />	
+		<subant target="db_cleandata_release_1-6">
+			<property file="Demodata\db.properties" />
+			<fileset dir="Demodata" includes="data_build.xml" />
+		</subant>	
+		<subant target="create_demodata_tables_release_1-6">
+			<property file="Demodata\db.properties" />
+			<fileset dir="Demodata" includes="data_build.xml" />
+		</subant>	
+		<subant target="create_procedures_release_1-6">
+			<property file="Demodata\db.properties" />
+			<fileset dir="Demodata" includes="data_build.xml" />
+		</subant>	
+		<subant target="db_demodata_load_data">
+			<property file="Demodata\db.properties" />
+			<fileset dir="Demodata" includes="data_build.xml" />
+		</subant>		
+	</target>
+	
+	<target name="load_workdata">
+		<echo message="-----------------Loading Workdata module-----------------" />		
+		<subant target="db_cleandata_release_1-6">
+			<property file="Workdata\db.properties" />
+			<fileset dir="Workdata" includes="data_build.xml" />
+		</subant>	
+		<subant target="create_workdata_tables_release_1-6">
+			<property file="Workdata\db.properties" />
+			<fileset dir="Workdata" includes="data_build.xml" />
+		</subant>	
+		<subant target="db_workdata_load_data">
+			<property file="Workdata\db.properties" />
+			<fileset dir="Workdata" includes="data_build.xml" />
+		</subant>
+	</target>
+	
+	<!-- =================================================================== -->
+	<!-- 			DATABASE MODULES SETUP						 			 -->
+	<!-- =================================================================== -->	
+	<target name="load_data">	
+		<antcall target="load_pmdata"/>
+		<antcall target="load_hivedata"/>
+		<antcall target="load_demodata"/>		
+		<antcall target="load_metadata"/>
+		<antcall target="load_workdata"/>
+	</target>
+</project>
+
+

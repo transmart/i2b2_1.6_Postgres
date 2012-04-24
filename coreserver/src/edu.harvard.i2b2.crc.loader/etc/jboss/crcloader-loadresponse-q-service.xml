@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: crcloader-loadresponse-q-service.xml,v 1.2 2008/02/08 21:03:05 rk903 Exp $ -->
+
+<server>
+
+  <!-- ==================================================================== -->
+  <!-- JMS Stuff                                                            -->
+  <!-- ==================================================================== -->
+
+  <mbean code="org.jboss.mq.server.jmx.Queue"
+	 name="jboss.mq.destination:service=Queue,name=jms/edu.harvard.i2b2.crc.loader.loadresponse">
+    <attribute name="JNDIName">jms/edu.harvard.i2b2.crc.loader.loadresponse</attribute>
+    <attribute name="RedeliveryLimit">0</attribute>
+    <depends optional-attribute-name="DestinationManager">jboss.mq:service=DestinationManager</depends>
+  </mbean>
+</server>

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<!--
+  - Application context definition for i2b2 with spring jdbc template.
+  -->
+<beans>
+  <!--
+  <bean id="querytool_properties" class="org.spf.beans.factory.config.PropertiesFactoryBean">
+      <property name="location" value="queryprocessor.properties"/>
+   </bean>
+   <bean id="clobType" class="edu.harvard.i2b2.crc.datavo.pdo.ClobType">
+   </bean>
+  -->
+  
+  <bean id="jaxbPackage" class="org.springframework.beans.factory.config.ListFactoryBean">
+    <property name="sourceList">
+      <list>
+        <value>edu.harvard.i2b2.crc.datavo.i2b2message</value>
+        <value>edu.harvard.i2b2.crc.datavo.pdo</value>
+        <value>edu.harvard.i2b2.crc.datavo.pdo.query</value>
+        <value>edu.harvard.i2b2.crc.datavo.setfinder.query</value>
+        <value>edu.harvard.i2b2.crc.datavo.pm</value>
+        <value>edu.harvard.i2b2.crc.datavo.ontology</value>
+        <value>edu.harvard.i2b2.crc.datavo.i2b2result</value>
+      </list>
+    </property>
+  </bean>
+  
+  <bean id="appType" class="edu.harvard.i2b2.crc.datavo.i2b2message.ApplicationType">
+    <property name="applicationName" value="edu.harvard.i2b2.crc"/>
+    <property name="applicationVersion" value="1.6"/>
+  </bean>
+  
+ 
+  
+ <bean id="message_header" class="edu.harvard.i2b2.crc.datavo.i2b2message.MessageHeaderType">
+ 	<property name="sendingApplication" ref="appType"/>
+ </bean>
+ 
+ <bean id="TestDataSourceLookup" class="edu.harvard.i2b2.crc.datavo.db.DataSourceLookup">
+	 <property name="dataSource" value="TestDataSource"/>
+	 <property name="serverType" value="ORACLE"/>
+	 <property name="fullSchema" value="asthma"/>
+  </bean>
+ 
+ <bean id="TestDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
+		<property name="url" value="jdbc:oracle:thin:@localhost:1521:XE"/>
+		<property name="username" value="i2b2demodata"/>
+		<property name="password" value="i2b2demodata"/>
+	</bean>
+
+
+<!--
+ <bean id="CRCDataSourceLookup" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+                <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
+                <property name="url" value="jdbc:oracle:thin:@localhost:1521:XE"/>
+                <property name="username" value="i2b2hive"/>
+                <property name="password" value="i2b2hive"/>
+        </bean>
+-->
+ <bean id="CRCDataSourceLookup" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+                <property name="driverClassName" value="org.postgresql.Driver"/>
+                <property name="url" value="jdbc:postgresql://192.168.40.107:5432/rc_1_6_4_i2b2hive"/>
+                <property name="username" value="i2b2hive"/>
+                <property name="password" value="demouser"/>
+        </bean>
+
+  <bean name="defaultSetfinderResultType" class="java.lang.String">
+    <constructor-arg  index="0" type="java.lang.String"><value>PATIENTSET</value></constructor-arg>
+  </bean>
+  
+  
+    
+  
+  <bean name="setFinderResultGeneratorMap" class="org.springframework.beans.factory.config.MapFactoryBean">
+    <property name="sourceMap">
+      <map>
+      <entry>
+        <key>
+          <value>PATIENTSET</value>
+        </key>
+         <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultPatientSetGenerator</value>   
+      </entry>
+      <entry>
+        <key>
+          <value>PATIENT_ENCOUNTER_SET</value>
+        </key>
+         <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultEncounterSetGenerator</value>   
+      </entry>
+      <entry>
+        <key>
+          <value>PATIENT_COUNT_XML</value>
+        </key>
+        <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultPatientCountGenerator</value>
+      </entry>
+        <entry>
+          <key>
+            <value>PATIENT_GENDER_COUNT_XML</value>
+          </key>
+          <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultGenerator</value>
+        </entry>
+        <entry>
+          <key>
+            <value>PATIENT_RACE_COUNT_XML</value>
+          </key>
+          <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultGenerator</value>
+        </entry>
+        <entry>
+          <key>
+            <value>PATIENT_VITALSTATUS_COUNT_XML</value>
+          </key>
+          <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultGenerator</value>
+        </entry>
+        <entry>
+          <key>
+            <value>PATIENT_MORTALITY_COUNT_XML</value>
+          </key>
+          <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultGenerator</value>
+        </entry>
+        <entry>
+          <key>
+            <value>PATIENT_AGE_COUNT_XML</value>
+          </key>
+          <value>edu.harvard.i2b2.crc.dao.setfinder.QueryResultGenerator</value>
+        </entry>
+      </map>
+    </property>
+  </bean>
+
+
+
+</beans>
+

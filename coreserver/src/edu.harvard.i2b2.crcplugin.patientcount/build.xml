@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+$Id: build.xml,v 1.7 2010/03/09 16:38:29 rk903 Exp $
+-->
+<project name="PatientCount" basedir="." default="dist">
+
+	<property name="Name" value="PatientCount" />
+	<import file="../edu.harvard.i2b2.common/common_build.xml" />
+	<property environment="env" />
+	
+
+
+	<property file="build.properties" />
+	 <property file="etc/spring/patientcount_application_directory.properties" />
+	 <property name="analysis-commons-launcher" value="analysis-commons-launcher"/>
+	<property name="target_analysis_folder"    value="${crcplugin.home}/analysis_commons_launcher" />
+	 
+	 
+	<!-- =================================================================== -->
+	<!-- 								INIT 								 -->
+	<!-- =================================================================== -->
+	<target name="init" depends="common_init,common-classpath" description="Prepare for build">
+		<path id="classpath">
+			<path refid="common-classpath" />
+			<fileset dir="${genlib}">
+				<include name="*.jar" />
+			</fileset>
+			<!-- uploader webservice class path --> 
+			<pathelement location="${classes}" />
+			<pathelement location="../${i2b2CommonProject}/dist/i2b2Common-core.jar" />
+		</path>
+		<taskdef name="xjc" classname="com.sun.tools.xjc.XJCTask">
+			<classpath refid="classpath" />
+		</taskdef>
+		
+		  <mkdir dir="${target_analysis_folder}"/>
+		
+	</target>
+
+
+
+	<!-- =================================================================== -->
+	<!-- 								COMMON JAXB GENERATION 				 -->
+	<!-- =================================================================== -->
+	<target name="jaxb_gen" depends="init" description="Generate JAXB classes for i2b2 and Patient Data messages">
+
+		<xjc extension="true" destdir="${gensrc}" removeOldOutput="no">
+			<schema dir="../${i2b2xmlproject}/xsd/hive/pdo_1.1" includes="i2b2_PDO.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/crc/pdo_1.1" includes="CRC_PDO_QRY.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/hive/msg_1.1" includes="i2b2_response.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/hive/msg_1.1" includes="i2b2_result_msg.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/crc/psm_1.1" includes="CRC_PSM_QRY.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/crc/psm_1.1" includes="CRC_PSM_QRY_query_definition.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/crc/psm_1.1" includes="CRC_PSM_QRY_analysis_definition.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/pm_1.1" includes="PM_USER.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/ont_1.1" includes="ONT_QRY.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/ont_1.1" includes="ONT_RESP.xsd" />
+			<binding dir="." includes="etc/xsd/i2b2_response.xjb" />
+			<binding dir="." includes="etc/xsd/crc_psm_qry.xjb" />
+			<binding dir="." includes="etc/xsd/crc_psm_querydefinition.xjb" />
+			<binding dir="." includes="etc/xsd/crc_psm_analysisdefinition.xjb" />
+			<binding dir="." includes="etc/xsd/i2b2_pm_bindings.xjb" />
+			<binding dir="." includes="etc/xsd/crc_ontology_bindings.xjb" />
+			<binding dir="." includes="etc/xsd/crc_hive_result.xjb" />
+			<binding dir="." includes="etc/xsd/i2b2_pdo.xjb" />
+			<binding dir="." includes="etc/xsd/crc_pdo_qry.xjb" />
+		</xjc>
+	</target>
+
+
+	<!-- =================================================================== -->
+	<!-- 								CLEAN 								 -->
+	<!-- =================================================================== -->
+	<target name="clean" depends="common_clean" description="Clean all build products" />
+
+
+
+	<!-- =================================================================== -->
+	<!-- 								COMPILE 							 -->
+	<!-- =================================================================== -->
+	<target name="compile" depends="init" description="Compile files without cleaning">
+		<mkdir dir="${classes}" />
+		<javac destdir="${classes}" optimize="${javac.opt}" debug="${javac.debug}">
+			<src path="${gensrc}" />
+			<src path="${src}/server/" />
+			<src path="${src}/test" />
+			<classpath refid="classpath" />
+		</javac>
+	</target>
+
+
+	<!-- =================================================================== -->
+	<!-- 								DIST 								 -->
+	<!-- =================================================================== -->
+	<target name="dist" depends="init,jaxb_gen,compile" description="package application for distribution/deployment">
+		<!-- Package EJB for jboss -->
+		<echo message="${Name}: Creating the ejb archive package!" />
+		  <jar destfile="${dist}/CRCPlugin_PatientCount_Analysis.jar">
+		   <fileset dir="${classes}">
+		    <include name="edu/harvard/i2b2/**" />
+		   </fileset>
+		  </jar>
+		<antcall target="dist-server" />
+	</target>
+	
+	<target name="dist-server" depends="init,compile" description="package application for distribution/deployment">
+			<echo message="${Name}: Creating the server archive package!" />
+			<jar compress="true" jarfile="${dist}/${Name}-Server.jar">
+				<fileset dir="${etc}/spring">
+					<include name="patientcount_application_directory.*" />
+				</fileset>
+			</jar>
+		</target>
+
+	 <!-- setup the launcher folder -->
+	 <target name="setup_launcher_folder" depends="init">
+	  <!-- read the jboss folder name from the property file and copy jboss lib to launcher lib -->
+	  <!-- from the application sources -->
+	  <copy todir="${target_analysis_folder}">
+	  <fileset dir="${analysis-commons-launcher}">
+	   <include name="**/**"/>
+	  </fileset>
+	  </copy>
+	  <copy todir="${target_analysis_folder}/lib/jboss">
+	   <!-- from the commons launcher -->
+	   <fileset dir="${jboss.home}/server/default/lib">
+	    <include name="**"/>
+	   </fileset>
+	  </copy>
+	  <copy todir="${target_analysis_folder}/lib/axis2" flatten="true">
+	   <!-- from the commons launcher -->
+	   <fileset dir="${jboss.home}/server/default/deploy/i2b2.war/WEB-INF/lib">
+	    <include name="axis2*"/>
+	    <include name="axiom*"/>
+	    <include name="stax-api-1.0.1"/>
+	    <include name="w*"/>
+	    <include name="XmlSchema-1.2.jar"/>
+	   </fileset>
+	  </copy>
+	  
+	  <!-- make executable the shell scripts -->
+	  <chmod perm="+x">
+	   <fileset dir="${target_analysis_folder}/bin">
+	    <include name="*.sh"/>
+	   </fileset>
+	  </chmod>
+
+	 </target>
+	 
+	 <target name="deploy" depends="dist">
+	  <copy todir="${target_analysis_folder}/lib" flatten="true">
+	   <!-- from the commons launcher -->
+	   <fileset dir="${dist}">
+	    <include name="CRCPlugin_PatientCount_Analysis.jar"/>
+	    <include name="PatientCount-Server.jar"/>
+	   </fileset>
+	   <fileset dir="../${i2b2CommonProject}/dist">
+	    <include name="*.jar"/>
+	    </fileset>
+	  </copy>
+	  <echo message="copying property files to ${edu.harvard.i2b2.crc.applicationdir}" />
+	  <copy todir="${edu.harvard.i2b2.crcplugin.pb.applicationdir}">
+	 	<fileset dir="${etc}/spring">
+	 		<exclude name="patientcount_application_directory.properties" />
+	 	 </fileset>
+	  </copy>
+	 </target>
+	
+</project>
+
+
