@@ -15,6 +15,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -34,6 +35,7 @@ import edu.harvard.i2b2.crc.dao.pdo.input.SQLServerFactRelatedQueryHandler;
 import edu.harvard.i2b2.crc.dao.pdo.input.VisitListTypeHandler;
 import edu.harvard.i2b2.crc.dao.pdo.output.PatientFactRelated;
 import edu.harvard.i2b2.crc.datavo.db.DataSourceLookup;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientSet;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.EventListType;
@@ -50,6 +52,8 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 
 	private DataSourceLookup dataSourceLookup = null;
 	private String schemaName = null;
+	private List<ParamType> metaDataParamList = null;
+	
 
 	public TablePdoQueryPatientDao(DataSourceLookup dataSourceLookup,
 			DataSource dataSource) {
@@ -57,6 +61,10 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 		setDbSchemaName(dataSourceLookup.getFullSchema());
 		this.dataSourceLookup = dataSourceLookup;
 
+	}
+	
+	public void setMetaDataParamList(List<ParamType> metaDataParamList) { 
+		this.metaDataParamList = metaDataParamList; 
 	}
 
 	/**
@@ -110,35 +118,7 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 						patientNumList.toArray(new String[] {}));
 				query.setArray(1, paramArray);
 
-			} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				// create temp table
-				// load to temp table
-				// execute sql
-				log.debug("creating temp table");
-				tempTableName = this.getDbSchemaName()
-						+ FactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE;
-				java.sql.Statement tempStmt = conn.createStatement();
-
-				try {
-					tempStmt.executeUpdate("drop table if exists " + tempTableName);
-				} catch (SQLException sqlex) {
-					;
-				}
-
-				uploadTempTable(tempStmt, tempTableName, patientNumList);
-				String finalSql = "SELECT "
-						+ selectClause
-						+ " FROM "
-						+ getDbSchemaName()
-						+ "patient_dimension patient "
-						+ joinClause
-						+ " WHERE patient.patient_num IN (select distinct char_param1 FROM "
-						+ tempTableName + ") order by patient_num";
-				log.debug("Executing [" + finalSql + "]");
-
-				query = conn.prepareStatement(finalSql);
-
-			}  else if (serverType.equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) {
+			} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) {
 				// create temp table
 				// load to temp table
 				// execute sql
@@ -171,19 +151,19 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 			ResultSet resultSet = query.executeQuery();
 			long endTimeSql = System.currentTimeMillis();
 			long totalTimeSql = endTimeSql - startTimeSql;
-			System.out.println("********* Total time for visit sql ****"
+			log.debug("********* Total time for visit sql ****"
 					+ totalTimeSql);
 			long startTime = System.currentTimeMillis();
 			// JdbcRowSet rowSet = new JdbcRowSetImpl(resultSet);
 			while (resultSet.next()) {
 				PatientType patient = patientBuilder.buildPatientSet(resultSet,
-						"i2b2");
+						"i2b2",metaDataParamList);
 				patientSet.getPatient().add(patient);
 
 			}
 			long endTime = System.currentTimeMillis();
 			long totalTime = endTimeSql - startTimeSql;
-			System.out.println("********* Total time for visit objects ****"
+			log.debug("********* Total time for visit objects ****"
 					+ totalTime);
 
 		} catch (SQLException sqlEx) {
@@ -197,10 +177,6 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 					DAOFactoryHelper.SQLSERVER)) {
 				PdoTempTableUtil tempUtil = new PdoTempTableUtil(); 
 				tempUtil.deleteTempTableSqlServer(conn, tempTableName);
-			} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.POSTGRES)) {
-				PdoTempTableUtil tempUtil = new PdoTempTableUtil(); 
-				tempUtil.deleteTempTablePostgres(conn, tempTableName);
 			}
 
 			try {
@@ -266,18 +242,18 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 			ResultSet resultSet = preparedStmt.executeQuery();
 			long endTimeSql = System.currentTimeMillis();
 			long totalTimeSql = endTimeSql - startTimeSql;
-			System.out.println("********* Total time for patient sql ****"
+			log.debug("********* Total time for patient sql ****"
 					+ totalTimeSql);
 			long startTime = System.currentTimeMillis();
 			// JdbcRowSet rowSet = new JdbcRowSetImpl(resultSet);
 			while (resultSet.next()) {
 				PatientType patient = patientBuilder.buildPatientSet(resultSet,
-						"i2b2");
+						"i2b2",metaDataParamList);
 				patientSet.getPatient().add(patient);
 			}
 			long endTime = System.currentTimeMillis();
 			long totalTime = endTimeSql - startTimeSql;
-			System.out.println("********* Total time for patient objects ****"
+			log.debug("********* Total time for patient objects ****"
 					+ totalTime);
 
 		} catch (SQLException sqlEx) {
@@ -370,7 +346,7 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 			// JdbcRowSet rowSet = new JdbcRowSetImpl(resultSet);
 			while (resultSet.next()) {
 				PatientType patient = patientBuilder.buildPatientSet(resultSet,
-						"i2b2");
+						"i2b2",metaDataParamList);
 				patientSet.getPatient().add(patient);
 				preparedStmt = conn.prepareStatement(mainSqlString);
 			}
@@ -399,6 +375,32 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 
 	}
 
+	  private String buildCustomSelectClause(String prefix) {
+	    	String detailSelectClause = " ";
+	    	for (Iterator<ParamType> iterator = this.metaDataParamList.iterator();iterator.hasNext();) { 
+	    		ParamType paramType = iterator.next();
+	    		detailSelectClause += prefix + "." + paramType.getColumn() + "  " + prefix + "_" + paramType.getColumn();
+	    		if (iterator.hasNext()) { 
+	    			detailSelectClause += " , ";
+	    		}
+	    	}
+	    	return detailSelectClause;
+	    }
+	  
+	  private String buildCustomLookupSelectClause() {
+	    	String detailSelectClause = " ";
+	    	for (Iterator<ParamType> iterator = this.metaDataParamList.iterator();iterator.hasNext();) { 
+	    		ParamType paramType = iterator.next();
+	    		if (paramType.getType().equalsIgnoreCase("string")) {
+	        		detailSelectClause +=  " , " +   paramType.getColumn() + "_lookup" + ".name_char" +   "  "  + paramType.getColumn() + "_name";
+	    		}
+	    	}
+	    	detailSelectClause += " , vital_status_cd_lookup.name_char vital_status_cd_name";
+	    	return detailSelectClause;
+	    }
+	  
+	  
+	  
 	/**
 	 * Function to generate select clause based on input flags
 	 * 
@@ -413,8 +415,10 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 		selectClause = "  patient.patient_num patient_patient_num";
 
 		if (detailFlag) {
-			selectClause += " ,patient.vital_status_cd patient_vital_status_cd, patient.birth_date patient_birth_date, patient.death_date patient_death_date, patient.sex_cd patient_sex_cd, patient.age_in_years_num patient_age_in_years_num, patient.language_cd patient_language_cd, patient.race_cd patient_race_cd, patient.marital_status_cd patient_marital_status_cd, patient.religion_cd patient_religion_cd, patient.zip_cd patient_zip_cd, patient.statecityzip_path patient_statecityzip_path";
-			selectClause += " ,vital_status_lookup.name_char vital_status_name, sex_lookup.name_char sex_name, language_lookup.name_char language_name, race_lookup.name_char race_name, religion_lookup.name_char religion_name, marital_status_lookup.name_char marital_status_name ";
+			selectClause += " ,patient.vital_status_cd patient_vital_status_cd, vital_Status_cd_lookup.name_char vital_status_cd_name, patient.birth_date patient_birth_date " ; 
+			selectClause += " ," + buildCustomSelectClause("patient");
+			selectClause +=  buildCustomLookupSelectClause() ; 
+			//status_lookup.name_char vital_status_name, sex_lookup.name_char sex_name, language_lookup.name_char language_name, race_lookup.name_char race_name, religion_lookup.name_char religion_name, marital_status_lookup.name_char marital_status_name ";
 		}
 		if (blobFlag) {
 			selectClause += ", patient.patient_blob patient_patient_blob ";
@@ -439,6 +443,20 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 		String joinClause = " ";
 
 		if (detailFlag) {
+			for (Iterator<ParamType> iterator = this.metaDataParamList.iterator();iterator.hasNext();) {
+				ParamType paramType = iterator.next();
+				if (paramType.getType().equalsIgnoreCase("string")) { 
+					String columnName = paramType.getColumn();
+					joinClause += " left JOIN " 
+						+ this.getDbSchemaName()
+						+ "code_lookup " + columnName + "_lookup \n"
+						+ " ON (patient." + columnName + " = " + columnName + "_lookup.code_Cd AND  upper(" + columnName +"_lookup.column_cd) = '" + columnName.toUpperCase() + "') \n";
+				}
+			}
+			
+				
+			
+			/*
 			joinClause = " left JOIN "
 					+ this.getDbSchemaName()
 					+ "code_lookup vital_status_lookup \n"
@@ -463,6 +481,7 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 					+ this.getDbSchemaName()
 					+ "code_lookup religion_lookup \n"
 					+ " ON (patient.religion_Cd = religion_lookup.code_Cd AND religion_lookup.column_cd = 'RELIGION_CD') \n";
+			*/
 
 		}
 		return joinClause;
@@ -470,20 +489,8 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 
 	private void uploadTempTable(Statement tempStmt, String tempTableName,
 			List<String> patientNumList) throws SQLException {
-		
-		// smuniraju: Extended to include POSTGRES 
-		// String createTempInputListTable = "create table " + tempTableName
-		// 		+ " ( char_param1 varchar(100) )";
-		
-		String createTempInputListTable = "";
-		String serverType = dataSourceLookup.getServerType();
-		if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-			createTempInputListTable = "create temporary table " + tempTableName
-			+ " ( char_param1 varchar(100) )";
-		} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) {
-			createTempInputListTable = "create table " + tempTableName
-			+ " ( char_param1 varchar(100) )";
-		}
+		String createTempInputListTable = "create table " + tempTableName
+				+ " ( char_param1 varchar(100) )";
 		tempStmt.executeUpdate(createTempInputListTable);
 		log.debug("created temp table" + tempTableName);
 		// load to temp table
@@ -518,6 +525,7 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 				detailFlag, blobFlag, statusFlag);
 		PatientFactRelated patientFactRelated = new PatientFactRelated(
 				buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+		
 		String selectClause = getSelectClause(detailFlag, blobFlag, statusFlag);
 		String joinClause = getLookupJoinClause(detailFlag, blobFlag,
 				statusFlag);
@@ -541,21 +549,6 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 					;
 				}
 				String createTempInputListTable = "create table "
-						+ factTempTable
-						+ " ( set_index int, char_param1 varchar(500) )";
-				tempStmt.executeUpdate(createTempInputListTable);
-				log.debug("created temp table" + factTempTable);
-			}  else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				log.debug("creating temp table");
-				java.sql.Statement tempStmt = conn.createStatement();
-				factTempTable = this.getDbSchemaName()
-						+ FactRelatedQueryHandler.TEMP_FACT_PARAM_TABLE;
-				try {
-					tempStmt.executeUpdate("drop table if exists " + factTempTable);
-				} catch (SQLException sqlex) {
-					;
-				}
-				String createTempInputListTable = "create temporary table "
 						+ factTempTable
 						+ " ( set_index int, char_param1 varchar(500) )";
 				tempStmt.executeUpdate(createTempInputListTable);
@@ -594,7 +587,7 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 					+ " where patient_num in (select distinct char_param1 from "
 					+ factTempTable + ") order by patient_num";
 			log.debug("Executing SQL [" + finalSql + "]");
-			System.out.println("Final Sql " + finalSql);
+			
 
 			query = conn.prepareStatement(finalSql);
 
@@ -602,7 +595,7 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 
 			while (resultSet.next()) {
 				PatientType patient = patientBuilder.buildPatientSet(resultSet,
-						"i2b2");
+						"i2b2",metaDataParamList);
 				patientSet.getPatient().add(patient);
 			}
 		} catch (SQLException sqlEx) {
@@ -641,7 +634,7 @@ public class TablePdoQueryPatientDao extends CRCDAO implements
 
 		PreparedStatement stmt = conn.prepareStatement(totalSql);
 
-		System.out.println(totalSql + " [ " + sqlParamCount + " ]");
+		log.debug(totalSql + " [ " + sqlParamCount + " ]");
 		if (inputOptionListHandler.isCollectionId()) {
 			for (int i = 1; i <= sqlParamCount; i++) {
 				stmt.setInt(i, Integer.parseInt(inputOptionListHandler

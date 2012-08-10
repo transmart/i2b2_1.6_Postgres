@@ -109,12 +109,14 @@ public class CRCConceptUpdateHandler extends RequestHandler {
 				Map parameterMap = new HashMap();
 				boolean synchronizeAllFlag = updateCrcConceptType
 						.getOperationType().equalsIgnoreCase("synchronize_all");
+				boolean hiddenConceptFlag = updateCrcConceptType.isHiddens();
 
 				parameterMap.put("ProjectType", projectInfo);
 				parameterMap.put("DBInfoType", this.getDbInfo());
 				parameterMap.put("MessageHeaderType", messageHeaderType);
 				parameterMap.put("ProcessId", processId);
 				parameterMap.put("SynchronizeAllFlag", synchronizeAllFlag);
+				parameterMap.put("HiddenConceptFlag", hiddenConceptFlag);
 				parameterMap.put("RequestRunnable",new CRCConceptUpdateRunnable());
 				er.setParameter(parameterMap);
 				Thread worker = new Thread(er);

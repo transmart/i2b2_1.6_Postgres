@@ -20,8 +20,10 @@ public class CRCConceptUpdateRunnable implements RequestRunnable  {
 			int processId = (Integer) parameterMap.get("ProcessId");
 			boolean synchronizeAllFlag = (Boolean) parameterMap
 					.get("SynchronizeAllFlag");
+			boolean hiddenConceptFlag = (Boolean) parameterMap
+					.get("HiddenConceptFlag");
 			crcConceptUpdateDao.addUpdateConcept(projectInfo, dbInfoType,
-					processId, messageHeaderType, synchronizeAllFlag);
+					processId, messageHeaderType, synchronizeAllFlag,hiddenConceptFlag);
 		}
 
 		

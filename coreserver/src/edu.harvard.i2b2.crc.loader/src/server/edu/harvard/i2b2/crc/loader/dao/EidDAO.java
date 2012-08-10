@@ -55,16 +55,9 @@ public class EidDAO extends CRCLoaderDAO implements IEidDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only the IN arguments to be supplied in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call "+ getDbSchemaName() + "CREATE_TEMP_EID_TABLE(?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + getDbSchemaName() + "CREATE_TEMP_EID_TABLE(?)}";
-			} else {
-				prepareCallString = "{call " + getDbSchemaName() + "CREATE_TEMP_EID_TABLE(?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ getDbSchemaName() + "CREATE_TEMP_EID_TABLE(?,?)}");
 			callStmt.setString(1, tempEncounterMappingTableName);
 			callStmt.registerOutParameter(2, java.sql.Types.VARCHAR);
 			callStmt.execute();
@@ -113,16 +106,10 @@ public class EidDAO extends CRCLoaderDAO implements IEidDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only the IN arguments to be supplied in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + this.getDbSchemaName() + "INSERT_EID_MAP_FROMTEMP(?,?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_EID_MAP_FROMTEMP(?,?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_EID_MAP_FROMTEMP(?,?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "INSERT_EID_MAP_FROMTEMP(?,?,?)}");
 			callStmt.setString(1, tempMapTableName);
 			callStmt.setInt(2, uploadId);
 			callStmt.registerOutParameter(3, java.sql.Types.VARCHAR);

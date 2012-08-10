@@ -3,7 +3,7 @@
     
     <xs:element name="success" type="allTerms_Type"/>
     
-    <!-- rootpathType (Top level type) -->			
+    <!-- allTermsType (Top level type) -->			
     <xs:complexType name="allTerms_Type"> 
         <xs:sequence>
             <xs:element name="accessedResource" type="xs:string"/>	

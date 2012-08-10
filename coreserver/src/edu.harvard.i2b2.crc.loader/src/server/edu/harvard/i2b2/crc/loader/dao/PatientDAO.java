@@ -58,16 +58,9 @@ public class PatientDAO extends CRCLoaderDAO implements IPatientDAO {
 			String tempPatientMappingTableName) throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be specified in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + getDbSchemaName() + "CREATE_TEMP_PATIENT_TABLE(?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + getDbSchemaName() + "CREATE_TEMP_PATIENT_TABLE(?)}";
-			} else {
-				prepareCallString = "{call " + getDbSchemaName() + "CREATE_TEMP_PATIENT_TABLE(?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ getDbSchemaName() + "CREATE_TEMP_PATIENT_TABLE(?,?)}");
 			callStmt.setString(1, tempPatientTableName);
 			callStmt.registerOutParameter(2, java.sql.Types.VARCHAR);
 			// callStmt.setString(2, tempPatientMappingTableName);
@@ -118,16 +111,9 @@ public class PatientDAO extends CRCLoaderDAO implements IPatientDAO {
 			String tempMapTableName, int uploadId) throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be specified in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + getDbSchemaName() + "INSERT_PATIENT_FROMTEMP(?,?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + getDbSchemaName() + "INSERT_PATIENT_FROMTEMP(?,?)}";
-			} else {
-				prepareCallString = "{call " + getDbSchemaName() + "INSERT_PATIENT_FROMTEMP(?,?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ getDbSchemaName() + "INSERT_PATIENT_FROMTEMP(?,?,?)}");
 			callStmt.setString(1, tempTableName);
 			callStmt.setInt(2, uploadId);
 			callStmt.registerOutParameter(3, java.sql.Types.VARCHAR);

@@ -46,6 +46,7 @@ public class QueryRequestSpringDao extends CRCDAO implements IQueryRequestDao {
 	DataSourceLookup dataSourceLookup = null;
 	String processTimingFlag = "NONE";
 	Map projectParamMap = null;
+	boolean allowLargeTextValueConstrainFlag = true;
 	
 	
 	public QueryRequestSpringDao(DataSource dataSource,
@@ -65,6 +66,10 @@ public class QueryRequestSpringDao extends CRCDAO implements IQueryRequestDao {
 			this.processTimingFlag = (String)projectParamMap.get(ParamUtil.PM_ENABLE_PROCESS_TIMING);
 		}
 		
+	}
+	
+	public void setAllowLargeTextValueConstrainFlag(boolean allowLargeTextValueConstrainFlag)  { 
+		this.allowLargeTextValueConstrainFlag = allowLargeTextValueConstrainFlag;
 	}
 	
 	/**
@@ -97,6 +102,8 @@ public class QueryRequestSpringDao extends CRCDAO implements IQueryRequestDao {
 			if (queryGeneratorVersion.equals("1.6")) {
 				RecursiveBuild recursiveBuild = new RecursiveBuild(dataSourceLookup,queryRequestXml,encounterSetFlag);
 				recursiveBuild.setProjectParamMap(this.projectParamMap);
+				recursiveBuild.setAllowLargeTextValueConstrainFlag(allowLargeTextValueConstrainFlag);
+				
 				recursiveBuild.startSqlBuild();
 				sql = recursiveBuild.getSql();
 				ignoredItemMessage = recursiveBuild.getIgnoredItemMessage();

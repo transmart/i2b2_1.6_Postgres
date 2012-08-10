@@ -4,6 +4,7 @@ import java.util.List;
 
 import edu.harvard.i2b2.common.exception.I2B2DAOException;
 import edu.harvard.i2b2.crc.dao.pdo.input.IInputOptionListHandler;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientSet;
 import edu.harvard.i2b2.crc.datavo.pdo.query.EventListType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.PatientListType;
@@ -68,5 +69,8 @@ public interface ITablePdoQueryPatientDao {
 			List<Integer> sqlParamCountList,
 			IInputOptionListHandler inputOptionListHandler, boolean detailFlag,
 			boolean blobFlag, boolean statusFlag) throws I2B2DAOException;
+	
+	
+	public void setMetaDataParamList(List<ParamType> metaDataParamList);
 
 }

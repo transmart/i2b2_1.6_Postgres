@@ -9,35 +9,25 @@
 <!-- $Id: pm-ds.xml,v 1.4 2010/02/04 21:12:34 lcp5 Exp $ -->
 
 <datasources>
-	<local-tx-datasource>
-      <jndi-name>PMBootStrapDS</jndi-name>      
-      <driver-class>org.postgresql.Driver</driver-class>
-      <connection-url>jdbc:postgresql://192.168.40.107:5432/rc_1_6_4_i2b2pm</connection-url>
-      <user-name>i2b2pm</user-name>
-      <password>demouser</password>
-      <metadata>
-        <type-mapping>PostgreSQL</type-mapping>
-      </metadata>
-    </local-tx-datasource>
   <!-- sample sqlserver PMBootStrapDS  
     <local-tx-datasource>
       <jndi-name>PMBootStrapDS_SQLSERVER</jndi-name>      
       <driver-class>com.microsoft.sqlserver.jdbc.SQLServerDriver</driver-class>
       <connection-url>jdbc:sqlserver://localhost:1433</connection-url>
       <user-name>i2b2pm</user-name>
-      <password>i2b2pm_pswd</password>
+      <password>demouser</password>
       <metadata>
         <type-mapping>MS SQLSERVER2000</type-mapping>
       </metadata>
-    </local-tx-datasource>
-    -->
-  <!-- sample oracle PMBootStrapDS  
+    </local-tx-datasource>  -->
+    
+  <!-- sample oracle PMBootStrapDS  -->
   <local-tx-datasource>
-    <jndi-name>PMBootStrapDS_ORACLE</jndi-name>
+    <jndi-name>PMBootStrapDS</jndi-name>
       <driver-class>oracle.jdbc.driver.OracleDriver</driver-class>      
       <connection-url>jdbc:oracle:thin:@localhost:1521:xe</connection-url>
       <user-name>i2b2pm</user-name>
-      <password>i2b2pm_pswd</password>
+      <password>demouser</password>
     </local-tx-datasource>
--->
+
 </datasources>

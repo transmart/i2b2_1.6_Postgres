@@ -54,7 +54,7 @@ public class CRCLoaderDAO {
 	}
 
 	public void setDbSchemaName(String dbSchemaName) {
-		if (dbSchemaName != null && (dbSchemaName.trim().equals("") || dbSchemaName.endsWith("."))) {
+		if (dbSchemaName != null && dbSchemaName.endsWith(".")) {
 			this.dbSchemaName = dbSchemaName.trim();
 		} else if (dbSchemaName != null) {
 			this.dbSchemaName = dbSchemaName.trim() + ".";
@@ -76,8 +76,7 @@ public class CRCLoaderDAO {
 			CallableStatement callStmt, int outParamIndex) throws SQLException,
 			I2B2Exception {
 
-		if (serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.SQLSERVER) || 
-			serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
+		if (serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.SQLSERVER)) {
 			String errorMsg = callStmt.getString(outParamIndex);
 			if (errorMsg != null) {
 				System.out.println("error codde" + errorMsg);

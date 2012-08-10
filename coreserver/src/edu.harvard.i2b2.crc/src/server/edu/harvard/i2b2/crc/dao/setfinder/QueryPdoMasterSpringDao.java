@@ -65,9 +65,7 @@ public class QueryPdoMasterSpringDao extends CRCDAO implements
 
 		private String INSERT_ORACLE = "";
 		private String INSERT_SQLSERVER = "";
-		private String INSERT_POSTGRES = "";
 		private String SEQUENCE_ORACLE = "";
-		private String SEQUENCE_POSTGRES = "";
 
 		private DataSourceLookup dataSourceLookup = null;
 
@@ -75,19 +73,6 @@ public class QueryPdoMasterSpringDao extends CRCDAO implements
 				DataSourceLookup dataSourceLookup) {
 			super();
 			this.setDataSource(dataSource);
-			this.dataSourceLookup = dataSourceLookup;
-			
-			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.POSTGRES)) {
-				this.setReturnGeneratedKeys(true);
-				INSERT_POSTGRES = "INSERT INTO "
-						+ dbSchemaName
-						+ "QT_PDO_QUERY_MASTER "
-						+ "(QUERY_MASTER_ID,  USER_ID, GROUP_ID,CREATE_DATE,REQUEST_XML,I2B2_REQUEST_XML) "
-						+ "VALUES (?,?,?,?,?,?)";				
-				SEQUENCE_POSTGRES = "select nextval('QT_SQ_PQM_QMID')";
-				return;
-			}	
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					DAOFactoryHelper.ORACLE)) {
 				this.setReturnGeneratedKeys(true);
@@ -109,6 +94,8 @@ public class QueryPdoMasterSpringDao extends CRCDAO implements
 						+ "VALUES (?,?,?,?,?)";
 				this.setSql(INSERT_SQLSERVER);
 			}
+			this.dataSourceLookup = dataSourceLookup;
+
 			declareParameter(new SqlParameter(Types.VARCHAR));
 			declareParameter(new SqlParameter(Types.VARCHAR));
 			declareParameter(new SqlParameter(Types.TIMESTAMP));
@@ -140,16 +127,8 @@ public class QueryPdoMasterSpringDao extends CRCDAO implements
 						queryMaster.getCreateDate(),
 						queryMaster.getRequestXml(), i2b2RequestXml };
 				update(object);
-			} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.POSTGRES)) {
-				queryMasterIdentityId = jdbc.queryForInt(SEQUENCE_POSTGRES);
-				object = new Object[] { queryMasterIdentityId,
-						queryMaster.getUserId(), queryMaster.getGroupId(),
-						queryMaster.getCreateDate(),
-						queryMaster.getRequestXml(), i2b2RequestXml };
-				jdbc.update(INSERT_POSTGRES, object);
-				// update(object);
-			}  
+
+			}
 
 			queryMaster.setQueryMasterId(String.valueOf(queryMasterIdentityId));
 

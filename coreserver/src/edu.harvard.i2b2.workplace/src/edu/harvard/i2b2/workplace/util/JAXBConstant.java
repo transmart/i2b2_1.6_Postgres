@@ -22,6 +22,7 @@ public class JAXBConstant {
     public static final String[] DEFAULT_PACKAGE_NAME = new String[] {
             "edu.harvard.i2b2.workplace.datavo.i2b2message",
             "edu.harvard.i2b2.workplace.datavo.wdo",
+            "edu.harvard.i2b2.workplace.datavo.crc.setfinder.query",
             "edu.harvard.i2b2.workplace.datavo.pm"
         };
 }

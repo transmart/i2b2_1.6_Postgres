@@ -48,7 +48,8 @@ public class CreateConceptXmlDao extends JdbcDaoSupport {
 	}
 
 	public void buildConceptUpdateXml(ProjectType projectInfo,
-			DBInfoType dbInfo, String pdoFileName, boolean synchronizeAllFlag)
+			DBInfoType dbInfo, String pdoFileName, boolean synchronizeAllFlag,
+			boolean hiddenConceptFlag)
 			throws I2B2Exception {
 		File tempFile = createTempFile(pdoFileName);
 
@@ -63,17 +64,17 @@ public class CreateConceptXmlDao extends JdbcDaoSupport {
 
 			conceptWriter.startDocument();
 			buildDimensionUpdateXml(projectInfo, dbInfo, pdoFileName,
-					synchronizeAllFlag, "concept_dimension", conceptWriter);
+					synchronizeAllFlag, hiddenConceptFlag,"concept_dimension", conceptWriter);
 			ObserverXMLWriterUtil observerWriter = new ObserverXMLWriterUtil(
 					xmlWriter);
 
 			buildDimensionUpdateXml(projectInfo, dbInfo, pdoFileName,
-					synchronizeAllFlag, "provider_dimension", observerWriter);
+					synchronizeAllFlag, hiddenConceptFlag,"provider_dimension", observerWriter);
 			ModifierXMLWriterUtil modifierWriter = new ModifierXMLWriterUtil(
 					xmlWriter);
 
 			buildDimensionUpdateXml(projectInfo, dbInfo, pdoFileName,
-					synchronizeAllFlag, "modifier_dimension", modifierWriter);
+					synchronizeAllFlag, hiddenConceptFlag,"modifier_dimension", modifierWriter);
 			modifierWriter.endDocument();
 			
 		} catch (XMLStreamException e) {
@@ -88,7 +89,7 @@ public class CreateConceptXmlDao extends JdbcDaoSupport {
 
 	private void buildDimensionUpdateXml(ProjectType projectInfo,
 			DBInfoType dbInfo, String pdoFileName, boolean synchronizeAllFlag,
-			String dimensionTableName, PatientDataXMLWriterUtil xmlWriterUtil)
+			boolean hiddenConceptFlag,String dimensionTableName, PatientDataXMLWriterUtil xmlWriterUtil)
 			throws I2B2Exception {
 		String metadataSchema = dbInfo.getDb_fullSchema();
 		TableAccessDao tableAccessDao = new TableAccessDao();
@@ -103,11 +104,16 @@ public class CreateConceptXmlDao extends JdbcDaoSupport {
 		} else {
 			emptyStringClause = "rtrim(ltrim(c_basecode)) <> ''";
 		}
+		String hiddenConceptSql = " ";
+		if (hiddenConceptFlag) { 
+			hiddenConceptSql = " and c_visualattributes not like '_H%' ";
+		}
+		
 		String updateOnlyClause = " ";
 		if (synchronizeAllFlag == false) {
-			updateOnlyClause = " and c_visualattributes like '%E' and c_visualattributes not like '_H%' and c_synonym_cd = 'N' and m_exclusion_cd is null";
+			updateOnlyClause = " and c_visualattributes like '%E' "+ hiddenConceptSql + " and c_synonym_cd = 'N' and m_exclusion_cd is null";
 		} else {
-			updateOnlyClause = " and c_visualattributes not like '_H%' and c_synonym_cd = 'N' and m_exclusion_cd is null";
+			updateOnlyClause = "  and c_synonym_cd = 'N' " + hiddenConceptSql + " and m_exclusion_cd is null";
 		}
 		// call table access
 		List<String> tableNameList = tableAccessDao.getEditorTableName(

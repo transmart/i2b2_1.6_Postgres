@@ -39,7 +39,7 @@ public class RecursiveBuild extends CRCDAO {
 	private StringBuffer processTimingMessageBuffer = new StringBuffer();
 	private Map projectParamMap = null;
 	private String processTimingFlag = "";
-	
+	private boolean allowLargeTextValueConstrainFlag = true;
 	
 	
 	
@@ -66,6 +66,11 @@ public class RecursiveBuild extends CRCDAO {
 			this.processTimingFlag = (String)projectParamMap.get(ParamUtil.PM_ENABLE_PROCESS_TIMING);
 		}
 	}
+	
+	public void setAllowLargeTextValueConstrainFlag(boolean allowLargeTextValueConstrainFlag)  { 
+		this.allowLargeTextValueConstrainFlag = allowLargeTextValueConstrainFlag;
+	}
+	
 	
 	public Map getProjectParamMap() { 
 		return this.projectParamMap;
@@ -135,6 +140,10 @@ public class RecursiveBuild extends CRCDAO {
 					//copy the dx data to master temp table
 					//execSql.copyDxToMaster(singleItem.getItemKey(), false, false);
 					//System.out.println("insert into master_temp(m");
+					if (queryTiming == null) { 
+						CalulateQueryTiming calculateTiming = new CalulateQueryTiming(); 
+						queryTiming = calculateTiming.getQueryTiming(queryDef.getPanel());
+					}
 					sqlBuffer.append("\n<*>\n");
 					sqlBuffer.append(copyDxToMaster(singleItem.getItemKey(), queryTiming, masterQueryTiming, false, false,sql[1],level) ); 
 					sqlBuffer.append("\n<*>\n");
@@ -156,6 +165,10 @@ public class RecursiveBuild extends CRCDAO {
 		if (this.processTimingFlag.equalsIgnoreCase(ProcessTimingReportUtil.DEBUG)) {
 			queryTool.setProcessTimingFlag(this.processTimingFlag);
 		}
+		queryTool.setAllowLargeTextValueConstrainFlag(allowLargeTextValueConstrainFlag);
+		
+		
+		
 		
 		String sql = queryTool.getSetfinderSqlForQueryDefinition();
 		String maxPanelNum = String.valueOf(queryTool.getMaxPanelNumber());
@@ -212,7 +225,7 @@ public class RecursiveBuild extends CRCDAO {
 		String joinTableName = tempTableNameMap.getTempTableName();
 		String joinColumnName = "patient_num";
 		if (selectInstanceFlag) {
-			selectFields = " encounter_num, instance_num, patient_num,  ";
+			selectFields = " encounter_num, instance_num, patient_num, concept_cd, start_date, provider_id, ";
 		} else if (selectEncounterFlag) { 
 			selectFields = "encounter_num, patient_num, ";
 		} else { 
@@ -229,11 +242,11 @@ public class RecursiveBuild extends CRCDAO {
 				} else if (queryTimingHandler.isSameInstanceNum(queryTiming) && queryTimingHandler.isAny(masterQueryTiming)) { 
 					joinTableName = "observation_fact";
 					joinColumnName = "patient_num";
-					selectFields = " encounter_num, instance_num, patient_num,  ";
+					selectFields = " encounter_num, instance_num, patient_num, concept_cd, start_date, provider_id,  ";
 				}  else if (queryTimingHandler.isSameInstanceNum(queryTiming) && queryTimingHandler.isSameVisit(masterQueryTiming)) { 
 					joinTableName = "observation_fact";
 					joinColumnName = "encounter_num";
-					selectFields = " encounter_num, instance_num, patient_num,  ";
+					selectFields = " encounter_num, instance_num, patient_num, concept_cd, start_date, provider_id, ";
 				}
 			}
 		}
@@ -247,17 +260,15 @@ public class RecursiveBuild extends CRCDAO {
 		
 	}
 	
-	public String  deleteTempTable()  { 		
-		// smuniraju: Modified the query to include 'FROM' because keyword FROM is required in POSTGRES. 
-		return " delete from "+ this.getDbSchemaName() + tempTableNameMap.getTempDxTableName() + 
-			   " \n<*>\n delete from " + this.getDbSchemaName()+ tempTableNameMap.getTempTableName();
+	public String  deleteTempTable()  { 
+	
+		return " delete  "+ this.getDbSchemaName() + tempTableNameMap.getTempDxTableName() + " \n<*>\n delete  " + this.getDbSchemaName()+ tempTableNameMap.getTempTableName();
 		
 	}
 	
 
 	public String deleteTempMaster(String masterId,int level) {
-		// smuniraju: Modified the query to include 'FROM' because keyword FROM is required in POSTGRES.
-		return "\n <*> delete from " + this.getDbSchemaName() + tempTableNameMap.getTempMasterTable() +" where master_id = '" + masterId + "' and level_no >= " + level + "\n<*>";
+		return "\n <*> delete " + this.getDbSchemaName() + tempTableNameMap.getTempMasterTable() +" where master_id = '" + masterId + "' and level_no >= " + level + "\n<*>";
 	}
 	
 	

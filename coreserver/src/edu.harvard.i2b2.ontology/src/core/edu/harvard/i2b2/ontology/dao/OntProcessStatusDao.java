@@ -72,15 +72,7 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 					+ "ONT_PROCESS_STATUS"
 					+ "(process_id, process_type_cd, process_step_cd, start_date,  process_status_cd, changedby_char, message,entry_date,status_cd) values (?,?,?,?,?,?,?,?,?)";
 			int processId = 0;
-			
-			if (this.dbInfoType.getDb_serverType().equals("POSTGRES")) {
-				log.info(addSql);
-				ontProcessStatusType.setProcessId(String.valueOf(processId));
-				SaveOntProcessStatus saveOntProcessStatus = new SaveOntProcessStatus(dataSource, 
-						dbInfoType);
-				saveOntProcessStatus.save(ontProcessStatusType, userId);
-				processId = Integer.parseInt(ontProcessStatusType.getProcessId());
-			} else if (this.dbInfoType.getDb_serverType().equals("ORACLE")) {
+			if (this.dbInfoType.getDb_serverType().equals("ORACLE")) {
 				log.info(addSql);
 				
 				ontProcessStatusType.setProcessId(String.valueOf(processId));
@@ -253,8 +245,6 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 		
 		if (this.dbInfoType.getDb_serverType().equalsIgnoreCase("ORACLE")) { 
 			sql = " select * from (" + sql + " ) where rownum <= " + maxReturnRow ;
-		} else if (this.dbInfoType.getDb_serverType().equalsIgnoreCase("POSTGRES")) { 
-			sql = " select * from (" + sql + " )p limit " + maxReturnRow ;
 		}
 		List<OntologyProcessStatusType> ontProcessStatusType = jt.getJdbcOperations().query(sql, paramList.toArray(new Object[]{}), getParameterizedRowMapper());
 		OntologyProcessStatusListType ontProcessStatusListType = new OntologyProcessStatusListType();
@@ -407,14 +397,7 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 				sql = "select count(*) from " + dbInfoType.getDb_fullSchema()
 				+ "ONT_PROCESS_STATUS where (process_type_cd = ? or process_type_cd = ?)"+
 				"and start_date >  '" + sqlFormatedStartDate +  "' ";
-			} else if (dbInfoType.getDb_serverType().equalsIgnoreCase("POSTGRES")){ 
-				SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");	  			
-				String sqlFormatedStartDate = dateFormat.format(date2.getTime());
-				sql = "select count(*) from " + dbInfoType.getDb_fullSchema()
-				+ "ONT_PROCESS_STATUS where process_type_cd = ? or process_type_cd = ?)"+
-				"and start_date >  '" + sqlFormatedStartDate +  "' ";
 			}
-
 
 			if(sql != null)
 				count = jt.queryForInt(sql, "ONT_EDIT_CONCEPT", "ONT_DELETE_CONCEPT");
@@ -463,19 +446,14 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 				sql = "select count(*) from " + dbInfoType.getDb_fullSchema()
 				+ "ONT_PROCESS_STATUS where process_type_cd = ? and start_date > " +
 				" to_date('" + sqlFormatedStartDate +  "', 'DD-MM-YYYY HH24:MI:SS') ";
-			} else if(dbInfoType.getDb_serverType().equalsIgnoreCase("SQLSERVER")){ 
+			}
+			else if(dbInfoType.getDb_serverType().equalsIgnoreCase("SQLSERVER")){ 
 				SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
 				String sqlFormatedStartDate = dateFormat.format(date2.getTime());
 				sql = "select count(*) from " + dbInfoType.getDb_fullSchema()
 				+ "ONT_PROCESS_STATUS where process_type_cd = ? and start_date > " +
 				"'" + sqlFormatedStartDate +  "' ";
-			} else if (dbInfoType.getDb_serverType().equalsIgnoreCase("POSTGRES")){ 
-				SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");	  			
-				String sqlFormatedStartDate = dateFormat.format(date2.getTime());
-				sql = "select count(*) from " + dbInfoType.getDb_fullSchema()
-				+ "ONT_PROCESS_STATUS where process_type_cd = ? and start_date > " +
-				"'" + sqlFormatedStartDate +  "'";
 			}
 
 			if(sql != null)
@@ -505,11 +483,6 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 			
 				numRowsAdded = jt.update(addSql, String.valueOf(processId), ontProcessType, 
 						 today, userId, "COMPLETED", "C", today, today);
-			} else if (this.dbInfoType.getDb_serverType().equals("POSTGRES")) {
-				log.info(addSql);
-				processId = jt.queryForInt("select nextval('ONT_SQ_PS_PRID')");						
-				numRowsAdded = jt.update(addSql, processId, ontProcessType, 
-						 today, userId, "COMPLETED", "C", today, today);
 			} else if (this.dbInfoType.getDb_serverType().equals("SQLSERVER")) {
 				addSql = "insert into "
 						+ this.dbInfoType.getDb_fullSchema()
@@ -536,9 +509,7 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 
 		private String INSERT_ORACLE = "";
 		private String INSERT_SQLSERVER = "";
-		private String INSERT_POSTGRES = "";
 		private String SEQUENCE_ORACLE = "";
-		private String SEQUENCE_POSTGRES = "";
 		private DBInfoType dbInfo  = null;
 
 		public SaveOntProcessStatus(DataSource dataSource,
@@ -549,16 +520,8 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 			// sqlServerSequenceDao = new
 			// SQLServerSequenceDAO(dataSource,dataSourceLookup) ;
 			setDataSource(dataSource);
-			if (dbInfo.getDb_serverType().equalsIgnoreCase("POSTGRES")) {
-				INSERT_POSTGRES = "insert into "
-					+ dbInfo.getDb_fullSchema()
-					+ "ONT_PROCESS_STATUS"
-					+ "(process_id, process_type_cd, process_step_cd, start_date,  process_status_cd, changedby_char, message,entry_date,status_cd) values (?,?,?,?,?,?,?,?,?)";
-				
-				SEQUENCE_POSTGRES =  "select nextval('ONT_SQ_PS_PRID')";
-				return;
-			} 
-			if (dbInfo.getDb_serverType().equalsIgnoreCase("ORACLE")) {
+			if (dbInfo.getDb_serverType().equalsIgnoreCase(
+					"ORACLE")) {
 				INSERT_ORACLE = "insert into "
 					+ dbInfo.getDb_fullSchema()
 					+ "ONT_PROCESS_STATUS"
@@ -597,20 +560,6 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 			int processId = 0;
 			Object[] object = null;
 			if (dbInfo.getDb_serverType().equalsIgnoreCase(
-					"POSTGRES")) {
-				processId = jdbc.queryForInt(SEQUENCE_POSTGRES);
-				ontProcessStatusType.setProcessId(String
-						.valueOf(processId));
-				object = new Object[] { Integer.parseInt(ontProcessStatusType.getProcessId()),
-						ontProcessStatusType
-						.getProcessTypeCd(), ontProcessStatusType
-						.getProcessStepCd(), new Date(System.currentTimeMillis()), "PROCESSING", userId,
-						ontProcessStatusType.getMessage(), new Date(System.currentTimeMillis()), "C" };
-				
-				jdbc.update(INSERT_POSTGRES, object);
-				return;
-			}
-			if (dbInfo.getDb_serverType().equalsIgnoreCase(
 					"SQLSERVER")) {
 				object = new Object[] {
 
@@ -620,7 +569,7 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 						ontProcessStatusType.getMessage(), new Date(System.currentTimeMillis()), "C" };
 
 			} else if (dbInfo.getDb_serverType().equalsIgnoreCase(
-					"ORACLE")) {
+			"ORACLE")) {
 				processId = jdbc.queryForInt(SEQUENCE_ORACLE);
 				ontProcessStatusType.setProcessId(String
 						.valueOf(processId));

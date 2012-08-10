@@ -63,7 +63,7 @@ public class ItemMetaDataHandler {
 			throw new ConceptNotFoundException("[" + itemKey + "] ");
 
 		} else {
-			String theData = conceptType.getDimcode();			
+			String theData = conceptType.getDimcode();
 			if (conceptType.getColumndatatype() != null
 					&& conceptType.getColumndatatype().equalsIgnoreCase("T")) {
 				theData = SqlClauseUtil.handleMetaDataTextValue(
@@ -76,7 +76,7 @@ public class ItemMetaDataHandler {
 					&& conceptType.getColumndatatype().equalsIgnoreCase("D")) {
 				theData = SqlClauseUtil.handleMetaDataDateValue(
 						conceptType.getOperator(), conceptType.getDimcode());
-			}			
+			}
 			conceptType.setDimcode(theData);
 		}
 

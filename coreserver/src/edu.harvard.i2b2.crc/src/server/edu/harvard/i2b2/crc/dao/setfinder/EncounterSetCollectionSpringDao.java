@@ -72,13 +72,10 @@ public class EncounterSetCollectionSpringDao extends CRCDAO implements
 					+ "qt_patient_enc_collection(patient_enc_coll_id,result_instance_id,set_index,patient_num,encounter_num) values ("
 					+ getDbSchemaName() + "QT_SQ_QPER_PECID.nextval,?,?,?,?)";
 		} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-				DAOFactoryHelper.SQLSERVER) ) {
+				DAOFactoryHelper.SQLSERVER)) {
 			insert_sql = "insert into "
 					+ getDbSchemaName()
 					+ "qt_patient_enc_collection(result_instance_id,set_index,patient_num,encounter_num) values (?,?,?,?)";
-		} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-				DAOFactoryHelper.POSTGRES)) {
-			// smuniraju: This query is hardcoded within POSTGRES block in QueryResultEncounterSetGenerator.generateResult()  
 		}
 		sqlServerSequenceDao = new SQLServerSequenceDAO(dataSource,
 				dataSourceLookup);
@@ -116,16 +113,10 @@ public class EncounterSetCollectionSpringDao extends CRCDAO implements
 		patientEncColl[batchDataIndex++] = collElement;
 
 		if ((setIndex % 1000) == 0) {
-			// smuniraju
-			log.debug("Batch insert started @: " + System.currentTimeMillis());
-			
 			InsertStatementSetter batchSetter = new InsertStatementSetter(
 					patientEncColl, batchDataIndex);
 			jdbcTemplate.batchUpdate(insert_sql, batchSetter);
-			
-			// smuniraju
-			log.debug("Batch insert ended @: " + System.currentTimeMillis());
-			
+
 			Arrays.fill(patientEncColl, null);
 			batchDataIndex = 0;
 		}
@@ -138,10 +129,7 @@ public class EncounterSetCollectionSpringDao extends CRCDAO implements
 	public void flush() {
 		InsertStatementSetter batchSetter = new InsertStatementSetter(
 				patientEncColl, batchDataIndex);
-		// smuniraju
-		log.debug("Flushing " + batchDataIndex + " records: Batch insert started @: " + System.currentTimeMillis());
 		jdbcTemplate.batchUpdate(insert_sql, batchSetter);
-		log.debug("Flushing " + batchDataIndex + " records: Batch insert ended @: " + System.currentTimeMillis());
 		Arrays.fill(patientEncColl, null);
 		batchDataIndex = 0;
 		setIndex = 0;
@@ -173,6 +161,7 @@ public class EncounterSetCollectionSpringDao extends CRCDAO implements
 			ps.setLong(4, data[i].getEncounterId());
 
 		}
+
 	}
 
 }

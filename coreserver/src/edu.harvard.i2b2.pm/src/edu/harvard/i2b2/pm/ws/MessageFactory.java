@@ -170,7 +170,7 @@ public class MessageFactory {
 
         ApplicationType appType = new ApplicationType();
         appType.setApplicationName("PM Cell");
-        appType.setApplicationVersion("1.5");
+        appType.setApplicationVersion("1.601");
         messageHeader.setSendingApplication(appType);
 
         FacilityType facility = new FacilityType();

@@ -270,24 +270,6 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 					+ " group by r1.real_set_size "
 					+ " having count(r1.result_instance_id) > ? ";
 		} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-				DAOFactoryHelper.POSTGRES)) {
-			queryCountSql = " select count(r1.result_instance_id) result_count,r1.real_set_size "
-				+ " from " + this.getDbSchemaName() + "qt_query_result_instance r1 inner join " + this.getDbSchemaName()+ "qt_query_result_instance r2 on "
-				+ " r1.real_set_size = r2.real_set_size, "
-				+ this.getDbSchemaName() +"qt_query_instance qi "
-				+ " where "
-				+ "(r1.start_date, r1.start_date) overlaps (CURRENT_TIMESTAMP - interval '" + compareDays + " days', CURRENT_TIMESTAMP)"
-				+ " and "
-				+ "(r2.start_date, r2.start_date) overlaps (CURRENT_TIMESTAMP - interval '" + compareDays + " days', CURRENT_TIMESTAMP)"
-				+ " and r1.result_type_id = ?"
-				+ " and r2.result_type_id = ? "
-				+ " and  qi.user_id = ? "
-				+ " and qi.query_instance_id = r1.query_instance_id "
-				+ " and qi.query_instance_id = r2.query_instance_id "
-				+ " and r1.real_set_size = ? "
-				+ " group by r1.real_set_size "
-				+ " having count(r1.result_instance_id) > ? ";
-		} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
 				DAOFactoryHelper.SQLSERVER)) {
 			queryCountSql = " select count(r1.result_instance_id) result_count,r1.real_set_size "
 					+ " from " + this.getDbSchemaName() + "qt_query_result_instance r1 inner join " + this.getDbSchemaName() + "qt_query_result_instance r2 on "
@@ -352,29 +334,15 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 	private static class SavePatientSetResult extends SqlUpdate {
 
 		private String INSERT_ORACLE = "";
-		private String INSERT_POSTGRES = "";
+
 		private String INSERT_SQLSERVER = "";
 		private String SEQUENCE_ORACLE = "";
-		private String SEQUENCE_POSTGRES = "";
 		DataSourceLookup dataSourceLookup = null;
 
 		public SavePatientSetResult(DataSource dataSource, String dbSchemaName,
 				DataSourceLookup dataSourceLookup) {
 			super();
 			setDataSource(dataSource);
-			this.dataSourceLookup = dataSourceLookup;
-			
-			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.POSTGRES)) {
-				INSERT_POSTGRES = "INSERT INTO "
-					+ dbSchemaName
-					+ "QT_QUERY_RESULT_INSTANCE "
-					+ "(RESULT_INSTANCE_ID, QUERY_INSTANCE_ID, RESULT_TYPE_ID, SET_SIZE,START_DATE,END_DATE,STATUS_TYPE_ID,DELETE_FLAG) "
-					+ "VALUES (?,?,?,?,?,?,?,?)";
-				SEQUENCE_POSTGRES = "select nextval('QT_SQ_QRI_QRIID')";
-				return;
-			}
-			
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					DAOFactoryHelper.ORACLE)) {
 				INSERT_ORACLE = "INSERT INTO "
@@ -404,7 +372,7 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 			declareParameter(new SqlParameter(Types.TIMESTAMP));
 			declareParameter(new SqlParameter(Types.INTEGER));
 			declareParameter(new SqlParameter(Types.VARCHAR));
-			
+			this.dataSourceLookup = dataSourceLookup;
 
 			compile();
 		}
@@ -413,27 +381,6 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 			JdbcTemplate jdbc = getJdbcTemplate();
 			int resultInstanceId = 0;
 			Object[] object = null;
-			
-			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.POSTGRES)) {
-				
-				resultInstanceId = jdbc.queryForInt(SEQUENCE_POSTGRES);
-				resultInstance.setResultInstanceId(String.valueOf(resultInstanceId));
-				
-				object = new Object[] {
-						resultInstance.getResultInstanceId(),
-						resultInstance.getQtQueryInstance().getQueryInstanceId(),
-						resultInstance.getQtQueryResultType().getResultTypeId(),
-						resultInstance.getSetSize(),
-						resultInstance.getStartDate(),
-						resultInstance.getEndDate(),
-						resultInstance.getQtQueryStatusType().getStatusTypeId(),
-						resultInstance.getDeleteFlag()
-				};
-				jdbc.update(INSERT_POSTGRES, object);					
-				return;
-			}
-			
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					DAOFactoryHelper.SQLSERVER)) {
 
@@ -476,8 +423,9 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 
 				resultInstance.setResultInstanceId(String
 						.valueOf(resultInstanceIdentityId));
-				System.out.println(resultInstanceIdentityId);
+				
 			}
+
 		}
 	}
 

@@ -13,32 +13,10 @@ public class PdoTempTableUtil {
 			this.deleteTempTableSqlServer(conn, tableName);
 		} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.ORACLE)) { 
 			this.deleteTempTableOracle(conn, tableName);
-		} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) { 
-			this.deleteTempTablePostgres(conn, tableName);
 		}
 	}
 	
 	public void deleteTempTableSqlServer(Connection conn, String tableName) {
-
-		Statement deleteStmt = null;
-		try {
-			deleteStmt = conn.createStatement();
-			conn.createStatement().executeUpdate("drop table " + tableName);
-		} catch (SQLException sqle) {
-			;
-		} finally {
-			try {
-				deleteStmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-
-	}
-	
-	// smuniraju: Added support for POSTGRES. 
-	public void deleteTempTablePostgres(Connection conn, String tableName) {
 
 		Statement deleteStmt = null;
 		try {

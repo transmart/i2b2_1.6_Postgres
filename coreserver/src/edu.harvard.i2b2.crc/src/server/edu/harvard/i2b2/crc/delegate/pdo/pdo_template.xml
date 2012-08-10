@@ -2,95 +2,95 @@
 <ns1:patient_data xmlns:ns1="http://www.i2b2.org/xsd/hive/pdo/1.1/"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <ns1:event_set>
-        <event update_date="2006-05-04T18:13:51.0Z" download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z"
-             sourcesystem_cd="sourcesystem_cd0" upload_id="upload_id0">
-            <event_id source="HIVE">event_id0</event_id>
-            <patient_id source="HIVE">patient_id0</patient_id>
-            <param column="inout_cd" name="in vs. outpatient code"></param>
-            <param column="location_cd" name="location code"></param>
-            <param column="location_path" name="location hierarchy"></param>
-            <param column="active_status_cd" name="date interpretation code"></param>
-            <start_date>2006-05-04T18:13:51.0Z</start_date>
-            <end_date>2006-05-04T18:13:51.0Z</end_date>
+        <event update_date="" download_date="" import_date=""
+             sourcesystem_cd="" upload_id="">
+            <event_id source=""></event_id>
+            <patient_id source=""></patient_id>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <start_date></start_date>
+            <end_date></end_date>
             <event_blob>
             </event_blob>
         </event>
     </ns1:event_set>
     <ns1:concept_set>
-        <concept update_date="2006-05-04T18:13:51.0Z" download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z"
-             sourcesystem_cd="sourcesystem_cd3" upload_id="upload_id3">
-            <concept_path>concept_path0</concept_path>
-            <concept_cd>concept_cd0</concept_cd>
-            <name_char>name_char0</name_char>
+        <concept update_date="" download_date="" import_date=""
+             sourcesystem_cd="" upload_id="">
+            <concept_path></concept_path>
+            <concept_cd></concept_cd>
+            <name_char></name_char>
             <concept_blob>
             </concept_blob>
         </concept>
     </ns1:concept_set>
     <ns1:observer_set>
-        <observer update_date="2006-05-04T18:13:51.0Z" download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z"
-             sourcesystem_cd="sourcesystem_cd6" upload_id="upload_id6">
-            <observer_path>observer_path0</observer_path>
-            <observer_cd>observer_cd0</observer_cd>
-            <name_char>name_char3</name_char>
+        <observer update_date="" download_date="" import_date=""
+             sourcesystem_cd="" upload_id="">
+            <observer_path></observer_path>
+            <observer_cd></observer_cd>
+            <name_char></name_char>
             <observer_blob>
             </observer_blob>
         </observer>
     </ns1:observer_set>
     <ns1:pid_set>
         <pid>
-            <patient_id status="status0" update_date="2006-05-04T18:13:51.0Z" download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z"
-                 sourcesystem_cd="sourcesystem_cd9" upload_id="upload_id9" source="HIVE">patient_id3</patient_id>
-            <patient_map_id source="HIVE" status="status1" update_date="2006-05-04T18:13:51.0Z" download_date="2006-05-04T18:13:51.0Z"
-                 import_date="2006-05-04T18:13:51.0Z" sourcesystem_cd="sourcesystem_cd10" upload_id="upload_id10">patient_map_id0</patient_map_id>
+            <patient_id status="" update_date="" download_date="" import_date=""
+                 sourcesystem_cd="" upload_id="" source=""></patient_id>
+            <patient_map_id source="" status="" update_date="" download_date=""
+                 import_date="" sourcesystem_cd="" upload_id=""></patient_map_id>
         </pid>
     </ns1:pid_set>
     <ns1:eid_set>
         <eid>
-            <event_id source="HIVE" patient_id="patient_id6" patient_id_source="HIVE" status="status6" update_date="2006-05-04T18:13:51.0Z"
-                 download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z" sourcesystem_cd="sourcesystem_cd15"
-                 upload_id="upload_id15">event_id3</event_id>
-            <event_map_id source="HIVE" patient_id="patient_id7" patient_id_source="HIVE" status="status7" update_date="2006-05-04T18:13:51.0Z"
-                 download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z" sourcesystem_cd="sourcesystem_cd16"
-                 upload_id="upload_id16">event_map_id0</event_map_id>
+            <event_id source="" patient_id="" patient_id_source="" status="" update_date=""
+                 download_date="" import_date="" sourcesystem_cd=""
+                 upload_id=""></event_id>
+            <event_map_id source="" patient_id="" patient_id_source="" status="" update_date=""
+                 download_date="" import_date="" sourcesystem_cd=""
+                 upload_id=""></event_map_id>
         </eid>
     </ns1:eid_set>
     <ns1:patient_set>
-        <patient update_date="2006-05-04T18:13:51.0Z" download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z"
-             sourcesystem_cd="sourcesystem_cd21" upload_id="upload_id21">
-            <patient_id source="HIVE">patient_id12</patient_id>
-            <param column="vital_status_cd" name="date interpretation code">param3</param>
-            <param column="birth_date" name="birthdate">param3</param>
-            <param column="death_date" name="date of death">param3</param>
-            <param column="sex_cd" name="gender">param3</param>
-            <param column="age_in_years_num" name="age">param3</param>
-            <param column="language_cd" name="language">param3</param>
-            <param column="race_cd" name="race">param3</param>
-            <param column="religion_cd" name="religion">param3</param>
-            <param column="marital_status_cd" name="marital status">param3</param>
-            <param column="statecityzip_path_char" name="zip code hierarchy">param3</param>
+        <patient update_date="" download_date="" import_date=""
+             sourcesystem_cd="" upload_id="">
+            <patient_id source=""></patient_id>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
+            <param column="" name=""></param>
             <patient_blob>
             </patient_blob>
         </patient>
     </ns1:patient_set>
-    <ns1:observation_set panel_name="panel_name0">
-        <observation update_date="2006-05-04T18:13:51.0Z" download_date="2006-05-04T18:13:51.0Z" import_date="2006-05-04T18:13:51.0Z"
-             sourcesystem_cd="sourcesystem_cd24" upload_id="upload_id24">
-            <event_id source="HIVE">event_id6</event_id>
-            <patient_id source="HIVE">patient_id15</patient_id>
-            <concept_cd name="name6">concept_cd3</concept_cd>
-            <observer_cd name="name">observer_cd3</observer_cd>
-            <start_date>2006-05-04T18:13:51.0Z</start_date>
-            <modifier_cd name="name7">modifier_cd0</modifier_cd>
-            <instance_num name="">instance_num0</instance_num>
-            <valuetype_cd>valuetype_cd0</valuetype_cd>
-            <tval_char>tval_char0</tval_char>
-            <nval_num units="units0">3.141592653589</nval_num>
-            <valueflag_cd name="name8">valueflag_cd0</valueflag_cd>
-            <quantity_num>3.141592653589</quantity_num>
-            <units_cd>units_cd0</units_cd>
-            <end_date>2006-05-04T18:13:51.0Z</end_date>
-            <location_cd name="name9">location_cd0</location_cd>
-            <confidence_num>3.141592653589</confidence_num>
+    <ns1:observation_set panel_name="">
+        <observation update_date="" download_date="" import_date=""
+             sourcesystem_cd="" upload_id="">
+            <event_id source=""></event_id>
+            <patient_id source=""></patient_id>
+            <concept_cd name=""></concept_cd>
+            <observer_cd name=""></observer_cd>
+            <start_date></start_date>
+            <modifier_cd name=""></modifier_cd>
+            <instance_num name=""></instance_num>
+            <valuetype_cd></valuetype_cd>
+            <tval_char></tval_char>
+            <nval_num units=""></nval_num>
+            <valueflag_cd name=""></valueflag_cd>
+            <quantity_num></quantity_num>
+            <units_cd></units_cd>
+            <end_date></end_date>
+            <location_cd name=""></location_cd>
+            <confidence_num></confidence_num>
             <observation_blob>
             </observation_blob>
         </observation>

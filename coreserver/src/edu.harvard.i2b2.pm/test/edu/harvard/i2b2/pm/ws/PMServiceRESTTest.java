@@ -1,242 +1,942 @@
-/*
- * Copyright (c) 2006-2007 Massachusetts General Hospital 
- * All rights reserved. This program and the accompanying materials 
- * are made available under the terms of the i2b2 Software License v1.0 
- * which accompanies this distribution. 
- * 
- * Contributors:
- *     Mike Mendis - initial API and implementation
- */
-
 package edu.harvard.i2b2.pm.ws;
 
-import static org.junit.Assert.assertNotNull;
-import edu.harvard.i2b2.common.util.jaxb.JAXBUnWrapHelper;
-import edu.harvard.i2b2.common.util.jaxb.JAXBUtil;
-import edu.harvard.i2b2.pm.datavo.i2b2message.ResponseMessageType;
-import edu.harvard.i2b2.pm.datavo.i2b2message.SecurityType;
-import edu.harvard.i2b2.pm.datavo.pm.ConfigureType;
-import edu.harvard.i2b2.pm.util.PMJAXBUtil;
-//import edu.harvard.i2b2.pm.datavo.pm.RequestType;
+import static org.junit.Assert.*;
 
-import org.apache.axiom.om.OMAbstractFactory;
-import org.apache.axiom.om.OMElement;
-import org.apache.axiom.om.OMFactory;
-import org.apache.axiom.om.OMNamespace;
-import org.apache.axiom.om.impl.builder.StAXOMBuilder;
-
-import org.apache.axis2.AxisFault;
-import org.apache.axis2.Constants;
-import org.apache.axis2.addressing.EndpointReference;
-import org.apache.axis2.client.Options;
-import org.apache.axis2.client.ServiceClient;
-import org.junit.BeforeClass;
-
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.util.Properties;
+import java.io.StringWriter;
 
 import javax.xml.bind.JAXBElement;
-import javax.xml.stream.FactoryConfigurationError;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
 
-/**
- * PM client test. 
- */
-public class PMServiceRESTTest extends CRCAxisAbstract { 
-	private static EndpointReference targetEPR = new EndpointReference(
-	"http://services.i2b2.org/PM/rest/PMService/getServices");
+import junit.framework.JUnit4TestAdapter;
 
-	private static String targetEPR2 =
-		"http://127.0.0.1:8080/i2b2/rest/PMService/getServices";
-//	"http://services.i2b2.org/PM/rest/PMService/getServices";
+import org.apache.axiom.om.OMElement;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import edu.harvard.i2b2.common.util.jaxb.JAXBUnWrapHelper;
+import edu.harvard.i2b2.common.util.xml.XMLUtil;
+import edu.harvard.i2b2.pm.datavo.i2b2message.*;
+import edu.harvard.i2b2.pm.datavo.pm.CellDataType;
+import edu.harvard.i2b2.pm.datavo.pm.ConfigureType;
+import edu.harvard.i2b2.pm.datavo.pm.GetUserConfigurationType;
+import edu.harvard.i2b2.pm.datavo.pm.GlobalDataType;
+import edu.harvard.i2b2.pm.datavo.pm.ParamType;
+import edu.harvard.i2b2.pm.datavo.pm.ParamsType;
+import edu.harvard.i2b2.pm.datavo.pm.ProjectType;
+import edu.harvard.i2b2.pm.util.PMJAXBUtil;
 
-	public static OMElement getVersion() {
-		OMFactory fac = OMAbstractFactory.getOMFactory();
-		OMNamespace omNs = fac.createOMNamespace("http://axisversion.sample/xsd",
-		"tns");
+public class PMServiceRESTTest extends PMAxisAbstract{
+	private static String testFileDir = "";
 
-		OMElement method = fac.createOMElement("getServices", omNs);
+	private static String pmTargetEPR = 
+			"http://localhost:9090/i2b2/rest/PMService/getServices";			
+	//	"http://127.0.0.1:8080/i2b2/services/PMService/getServices";			
 
-		return method;
+	public static junit.framework.Test suite() { 
+		return new JUnit4TestAdapter(PMServiceRESTTest.class);
 	}
 
-	public static void doPrint(String response) throws Exception {
-		JAXBUtil jaxbUtil = new JAXBUtil(new String[] {
-				"edu.harvard.i2b2.pm.datavo.pm",
-				"edu.harvard.i2b2.pm.datavo.i2b2message"
-		});
-		JAXBElement jaxbElement = jaxbUtil.unMashallFromString(response);
-		ResponseMessageType responseMessageType = (ResponseMessageType) jaxbElement.getValue();
-		System.out.println("Response Message Number  :" + responseMessageType.getMessageHeader().getMessageControlId().getMessageNum());
-	}
 
-	/**
-	 * Test code to generate a PM requestPdo for a test sample and convert to
-	 * OMElement called by main below
-	 *
-	 * @param requestPdo
-	 *            String requestPdo to send to PM web service
-	 * @return An OMElement containing the PM web service requestPdo
-	 */
-	public static OMElement getPMPayLoad() throws Exception {
-		OMElement method = null;
+	@BeforeClass
+	public static void setUp() throws Exception {
+		testFileDir = "test"; //System.getProperty("testfiledir");
+		System.out.println("test file dir " + testFileDir);
 
-		try {
-            StringReader strReader = new StringReader(getPMString());
-            XMLInputFactory xif = XMLInputFactory.newInstance();
-            XMLStreamReader reader = xif.createXMLStreamReader(strReader);
-
-            StAXOMBuilder builder = new StAXOMBuilder(reader);
-            method = builder.getDocumentElement();      			
-			
-			
-			/*
-			OMFactory fac = OMAbstractFactory.getOMFactory();
-			OMNamespace omNs = fac.createOMNamespace("http://www.i2b2.org/xsd/hive/msg/1.1",
-			"i2b2");
-
-			method = fac.createOMElement("request", omNs);
-
-			StringReader strReader = new StringReader(getPMString());
-			XMLInputFactory xif = XMLInputFactory.newInstance();
-			XMLStreamReader reader = xif.createXMLStreamReader(strReader);
-
-			StAXOMBuilder builder = new StAXOMBuilder(reader);
-			OMElement lineItem = builder.getDocumentElement();
-			method.addChild(lineItem);
-			*/
-		} catch (FactoryConfigurationError e) {
-			// TODO Auto-generated catch block
-			// No log because its a thread?
-			e.printStackTrace();
-			throw new Exception(e);
+		if (!((testFileDir != null) && (testFileDir.trim().length() > 0))) {
+			throw new Exception(
+					"please provide test file directory info -Dtestfiledir");
 		}
 
-		return method;
 	}
 
-	/**
-	 * Test code to generate a PM requestPdo String for a sample PM report
-	 * called by main below
-	 *
-	 * @return A String containing the sample PM report
-	 */
-	public static String getPMString() throws Exception {
-		StringBuffer queryStr = new StringBuffer();
-		DataInputStream dataStream = new DataInputStream(PMServiceRESTTest.class.getResourceAsStream(
-				"PMSample.xml"));
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				dataStream));
-		String singleLine = null;
-
-		while ((singleLine = reader.readLine()) != null) {
-			queryStr.append(singleLine + "\n");
-		}
-
-		// Log query string
-		//System.out.println("queryStr " + queryStr);
-
-		return queryStr.toString();
-	}
-
-	/**
-	 * Test code to generate a PM requestPdo based on a sample report and make
-	 * a PM web service call PM Response is printed out to console.
-	 *
-	 */
-	private static ConfigureType queryResultInstance = null;
-	private  static String testFileDir = null;
-	public static void main(String[] args)
-	{
-		//:TODO accept server url as runtime parameter 
-		
-		/*
-			testFileDir = System.getProperty("testfiledir");
-			System.out.println("test file dir " + testFileDir);
-			if (!(testFileDir != null && testFileDir.trim().length()>0)) {
-				try {
-					throw new Exception("please provide test file directory info -Dtestfiledir");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			*/
-			//read test file and store query master;
-			String filename = "PMSample.xml";
-			try { 
-			String requestString = getPMString(); //getQueryString(filename);
-			System.out.println("test file dir " + testFileDir);
+	@Test
+	public void CreateUserRoleforCRC() throws Exception {
+		String filename = testFileDir + "/pm_create_user_for_crc.xml";
+		ConfigureType ctype = null;
+		String masterInstanceResult = null;
+		try { 
+			String requestString = getQueryString(filename);
 			OMElement requestElement = convertStringToOMElement(requestString); 
-			OMElement responseElement = getServiceClient(targetEPR2).sendReceive(requestElement);
-			
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Add Role 1
+			filename = testFileDir + "/pm_set_role1_for_crc.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Add Role 1
+			filename = testFileDir + "/pm_set_role2_for_crc.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			assertTrue(false);
+		}
+	}
+	
+	@Test
+	public void validSessionUnvalidUsernoXML() throws Exception {
+		try { 
+
+			GetUserConfigurationType userConfig = new GetUserConfigurationType();
+			userConfig.getProject().add("Demo");
+
+			edu.harvard.i2b2.pm.datavo.pm.ObjectFactory of = new  edu.harvard.i2b2.pm.datavo.pm.ObjectFactory();
+			BodyType bodyType = new BodyType();
+			bodyType.getAny().add(of.createGetUserConfiguration(userConfig));
+
+
+			RequestMessageType requestMessageType = buildRequestMessage(bodyType, "i2b2", "demouser", "Demo");
+			StringWriter strWriter = new StringWriter();
+			edu.harvard.i2b2.pm.datavo.i2b2message.ObjectFactory of2 = new edu.harvard.i2b2.pm.datavo.i2b2message.ObjectFactory();
+			PMJAXBUtil.getJAXBUtil().marshaller(of2.createRequest(requestMessageType), strWriter);
+
+
+			OMElement requestElement = convertStringToOMElement(strWriter.toString()); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
 			//read test file and store query instance ;
 			//unmarshall this response string 
 			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
 			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
 			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
 			ConfigureType masterInstanceResult = (ConfigureType)helper.getObjectByClass(r.getMessageBody().getAny(),ConfigureType.class);
-			queryResultInstance = masterInstanceResult;
-			//assertNotNull(queryResultInstance);
-			System.out.println(queryResultInstance);
-			} catch (Exception e) { 
-				e.printStackTrace();
-			}
-			//queryResultInstance = new  QueryResultInstanceType();
-			//queryResultInstance.setResultInstanceId("4801");
-			
-			
-	}
-	public static void main2(String[] args) {
-		try {
+			assertNotNull(masterInstanceResult);
 
- 			OMElement getPm = getPMPayLoad();
-
-			String requestElementString = getPMString(); //getPm.toString();
-			//    System.out.println(requestElementString);
-			/* 
-			ServicesMessage patientDataMsg = new ServicesMessage(requestElementString);
-			 
-			PMService pms = new PMService();
-			   OMElement pos = pms.getServices(getPm);
-
-			//ServicesType rt = patientDataMsg.getRequestType().getServices();
-			SecurityType rmt = patientDataMsg.getRequestMessageType().getMessageHeader().getSecurity();
-			
-			//log.debug("My username: " + rmt.getUsername());
-
-			System.out.println("My username client: " + rmt.getUsername());
-				*/
-			Options options = new Options();
-			options.setTo(targetEPR);
-
-			options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
-			options.setProperty(Constants.Configuration.ENABLE_REST,
-					Constants.VALUE_TRUE);
-			options.setTimeOutInMilliSeconds(50000);
-
-			ServiceClient sender = new ServiceClient();
-			sender.setOptions(options);
-
-			OMElement result = sender.sendReceive(getPm);
+			// try calling with another user
+			requestMessageType = buildRequestMessage(bodyType, "demo", masterInstanceResult.getUser().getPassword().getValue(), "Demo");
+			strWriter = new StringWriter();
+			of2 = new edu.harvard.i2b2.pm.datavo.i2b2message.ObjectFactory();
+			PMJAXBUtil.getJAXBUtil().marshaller(of2.createRequest(requestMessageType), strWriter);
 
 
-			if (result == null) {
-				System.out.println("result is null");
-			} else {
-				String response = result.getFirstElement().toString();
-				System.out.println("response = " + response);
-				doPrint(response);
-			}
-		} catch (AxisFault axisFault) {
-			axisFault.printStackTrace();
-		} catch (Exception e) {
+			requestElement = convertStringToOMElement(strWriter.toString()); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+
+		} catch (Exception e) { 
 			e.printStackTrace();
+			throw e;
+		}
+	}	
+	@Test
+	public void validUsernoXML() throws Exception {
+		try { 
+
+			GetUserConfigurationType userConfig = new GetUserConfigurationType();
+			userConfig.getProject().add("Demo");
+
+			edu.harvard.i2b2.pm.datavo.pm.ObjectFactory of = new  edu.harvard.i2b2.pm.datavo.pm.ObjectFactory();
+			BodyType bodyType = new BodyType();
+			bodyType.getAny().add(of.createGetUserConfiguration(userConfig));
+
+
+			RequestMessageType requestMessageType = buildRequestMessage(bodyType, "i2b2", "demouser", "Demo");
+			StringWriter strWriter = new StringWriter();
+			edu.harvard.i2b2.pm.datavo.i2b2message.ObjectFactory of2 = new edu.harvard.i2b2.pm.datavo.i2b2message.ObjectFactory();
+			PMJAXBUtil.getJAXBUtil().marshaller(of2.createRequest(requestMessageType), strWriter);
+
+
+			OMElement requestElement = convertStringToOMElement(strWriter.toString()); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			ConfigureType masterInstanceResult = (ConfigureType)helper.getObjectByClass(r.getMessageBody().getAny(),ConfigureType.class);
+			assertNotNull(masterInstanceResult);
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}	
+
+	@Test
+	public void wrongPassword() throws Exception {
+		String filename = testFileDir + "/pm_wrongpassword.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
 		}
 	}
+
+	@Test
+	public void validUser() throws Exception {
+		String filename = testFileDir + "/pm_valid_user.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			ConfigureType masterInstanceResult = (ConfigureType)helper.getObjectByClass(r.getMessageBody().getAny(),ConfigureType.class);
+			assertNotNull(masterInstanceResult);
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}
+	@Test
+	public void invalidUser() throws Exception {
+		String filename = testFileDir + "/pm_invalid_user.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}
+	@Test
+	public void CRUDUserWithValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_user_with_valid_user.xml";
+		ConfigureType ctype = null;
+		String masterInstanceResult = null;
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_user_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			ctype = (ConfigureType)helper.getObjectByClass(r.getMessageBody().getAny(),ConfigureType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getUser().getFullName(),"Bamboo User");
+			//	assertEquals(ctype.getUser().getEmail(),"bamboo@i2b2.org");
+			assertTrue(ctype.getUser().isIsAdmin());
+
+			//Update the user
+			filename = testFileDir + "/pm_update_user_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_user_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();			
+			ctype = (ConfigureType)helper.getObjectByClass(r.getMessageBody().getAny(),ConfigureType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getUser().getFullName(),"Bamboo User2");
+			//	assertEquals(ctype.getUser().getEmail(),"bamboo@i2b2.org");
+			assertFalse(ctype.getUser().isIsAdmin());
+
+			//Delete User
+			filename = testFileDir + "/pm_delete_user_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really deleted
+			filename = testFileDir + "/pm_create_user_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);			
+
+			//Reenable user
+			//Update the user
+			filename = testFileDir + "/pm_create_user_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really reenabled
+			filename = testFileDir + "/pm_create_user_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();			
+			ctype = (ConfigureType)helper.getObjectByClass(r.getMessageBody().getAny(),ConfigureType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getUser().getFullName(),"Bamboo User");
+			//	assertEquals(ctype.getUser().getEmail(),"bamboo@i2b2.org");
+			assertTrue(ctype.getUser().isIsAdmin());
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			assertTrue(false);
+		}
+	}
+
+
+	
+	@Test
+	public void createUserWithInValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_user_with_invalid_user.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}
+
+	@Test
+	public void CRUDCellWithValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_cell_with_valid_user.xml";
+		CellDataType ctype = null;
+		String masterInstanceResult = null;
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_cell_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			ctype = (CellDataType)helper.getObjectByClass(r.getMessageBody().getAny(),CellDataType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getId(),"Bamboo");
+			assertEquals(ctype.getProjectPath(),"/Bamboo");
+			assertEquals(ctype.getUrl(),"http://127.0.0.1/bamboo");
+			assertEquals(ctype.getName(),"Bamboo test");
+			assertEquals(ctype.getMethod(),"REST");
+
+			//Update the cell
+			filename = testFileDir + "/pm_update_cell_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_cell_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();			
+			ctype = (CellDataType)helper.getObjectByClass(r.getMessageBody().getAny(),CellDataType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getId(),"Bamboo");
+			assertEquals(ctype.getProjectPath(),"/Bamboo");
+			assertEquals(ctype.getUrl(),"http://127.0.0.1/bamboo2");
+			assertEquals(ctype.getName(),"Bamboo test2");
+			assertEquals(ctype.getMethod(),"REST2");
+
+			//Delete cell
+			filename = testFileDir + "/pm_delete_cell_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really deleted
+			filename = testFileDir + "/pm_create_cell_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);			
+
+			//Reenable cell
+			//Update the cell
+			filename = testFileDir + "/pm_create_cell_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really reenabled
+			filename = testFileDir + "/pm_create_cell_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();			
+			ctype = (CellDataType)helper.getObjectByClass(r.getMessageBody().getAny(),CellDataType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getId(),"Bamboo");
+			assertEquals(ctype.getProjectPath(),"/Bamboo");
+			assertEquals(ctype.getUrl(),"http://127.0.0.1/bamboo");
+			assertEquals(ctype.getName(),"Bamboo test");
+			assertEquals(ctype.getMethod(),"REST");
+		} catch (Exception e) { 
+			e.printStackTrace();
+			assertTrue(false);
+		}
+	}
+
+
+	@Test
+	public void createCellWithInValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_cell_with_invalid_user.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}
+
+
+	@Test
+	public void CRUDProjectWithValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_project_with_valid_user.xml";
+		ProjectType ctype = null;
+		String masterInstanceResult = null;
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_project_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			ctype = (ProjectType)helper.getObjectByClass(r.getMessageBody().getAny(),ProjectType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getId(),"BAMBOO");
+			assertEquals(ctype.getName(),"Bamboo Test");
+			assertEquals(ctype.getKey(), "e80");
+			assertEquals(ctype.getWiki(),"http://127.0.0.1/wiki");
+			assertEquals(ctype.getDescription(),"This is a message");
+			assertEquals(ctype.getPath(),"/bamboo");
+
+			//Update the project
+			filename = testFileDir + "/pm_update_project_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_project_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();			
+			ctype = (ProjectType)helper.getObjectByClass(r.getMessageBody().getAny(),ProjectType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getId(),"BAMBOO");
+			assertEquals(ctype.getName(),"Bamboo Test2");
+			assertEquals(ctype.getKey(), "e82");
+			assertEquals(ctype.getWiki(),"http://127.0.0.1/wiki2");
+			assertEquals(ctype.getDescription(),"This is a message2");
+			assertEquals(ctype.getPath(),"/bamboo");
+
+			//Delete project
+			filename = testFileDir + "/pm_delete_project_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really deleted
+			filename = testFileDir + "/pm_create_project_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);			
+
+			//Reenable project
+			//Update the project
+			filename = testFileDir + "/pm_create_project_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really reenabled
+			filename = testFileDir + "/pm_create_project_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();			
+			ctype = (ProjectType)helper.getObjectByClass(r.getMessageBody().getAny(),ProjectType.class);
+			assertNotNull(ctype);
+			assertEquals(ctype.getId(),"BAMBOO");
+			assertEquals(ctype.getName(),"Bamboo Test");
+			assertEquals(ctype.getWiki(),"http://127.0.0.1/wiki");
+			assertEquals(ctype.getDescription(),"This is a message");
+			assertEquals(ctype.getPath(),"/bamboo");
+			assertEquals(ctype.getKey(), "e80");
+		} catch (Exception e) { 
+			e.printStackTrace();
+			assertTrue(false);
+		}
+	}
+
+
+	@Test
+	public void createProjectWithInValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_project_with_invalid_user.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}
+
+
+	@Test
+	public void CRUDGlobalParamWithValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_global_param_with_valid_user.xml";
+		//ParamType ctype = null;
+		int id = -1;
+		String masterInstanceResult = null;
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_global_param_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			ParamsType allParams = (ParamsType)helper.getObjectByClass(r.getMessageBody().getAny(),ParamsType.class);
+
+			for (ParamType param : allParams.getParam())
+			{
+				if (param.getName().equals("Global") && param.getValue().equals("Global Value"))
+				{
+					assertNotNull(param);
+					assertEquals(param.getName(),"Global");
+					assertEquals(param.getValue(),"Global Value");
+					assertEquals(param.getDatatype(),"T");
+					id = param.getId();
+					break;
+				}
+			}
+
+
+			//Update the project
+			filename = testFileDir + "/pm_update_global_param_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestString = requestString.replace("{{{id}}}", Integer.toString(id));
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_recreate_global_param_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestString = requestString.replace("{{{id}}}", Integer.toString(id));
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			GlobalDataType global = (GlobalDataType)helper.getObjectByClass(r.getMessageBody().getAny(),GlobalDataType.class);
+
+			for (ParamType param : global.getParam())
+			{
+				if (param.getId() == id)
+				{
+					assertNotNull(param);
+					assertEquals(param.getName(),"Global");
+					assertEquals(param.getValue(),"Global Value2");
+					assertEquals(param.getDatatype(),"N");
+					break;
+				}
+			}
+
+			//Delete project
+			filename = testFileDir + "/pm_delete_global_param_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestString = requestString.replace("{{{id}}}", Integer.toString(id));
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really deleted
+			filename = testFileDir + "/pm_recreate_global_param_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestString = requestString.replace("{{{id}}}", Integer.toString(id));			
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);			
+
+			//Reenable project
+			//Update the project
+			filename = testFileDir + "/pm_update_global_param_with_valid_user.xml";
+			requestString = getQueryString(filename);
+			requestString = requestString.replace("{{{id}}}", Integer.toString(id));			
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+			assertNotNull(masterInstanceResult);
+
+			//Check to see if really reenabled
+			filename = testFileDir + "/pm_recreate_global_param_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestString = requestString.replace("{{{id}}}", Integer.toString(id));
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			global = (GlobalDataType)helper.getObjectByClass(r.getMessageBody().getAny(),GlobalDataType.class);
+
+			for (ParamType param : global.getParam())
+			{
+				if (param.getId() == id)
+				{
+					assertNotNull(param);
+					assertEquals(param.getName(),"Global");
+					assertEquals(param.getValue(),"Global Value2");
+					assertEquals(param.getDatatype(),"N");
+					break;
+				}
+			}
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			assertTrue(false);
+		}
+	}
+
+
+	@Test
+	public void createGlobalParamWithInValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_global_param_with_invalid_user.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}
+
+
+	@Test
+	public void createCelllParamWithValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_cell_param_with_valid_user.xml";
+		ParamType ctype = null;
+		String masterInstanceResult = null;
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_cell_param_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			ParamsType allParams = (ParamsType)helper.getObjectByClass(r.getMessageBody().getAny(),ParamsType.class);
+
+			for (ParamType param : allParams.getParam())
+			{
+				if (param.getName().equals("Bamboo_Param"))
+				{
+					ctype = param;
+					break;
+				}
+
+
+			}
+		} catch (Exception e) { 
+		}
+		assertNotNull(masterInstanceResult);
+		assertNotNull(ctype);
+		assertEquals(ctype.getName(),"Bamboo_Param");
+		assertEquals(ctype.getValue(),"my test");
+		assertEquals(ctype.getDatatype(),"T");
+	}	
+
+
+	@Test
+	public void createCellParamWithInValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_cell_param_with_invalid_user.xml";
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			String err = r.getResponseHeader().getResultStatus().getStatus().getType();
+			assertEquals("ERROR", err);
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+			throw e;
+		}
+	}
+
+	@Test
+	public void createProjetUserParamWithValidUser() throws Exception {
+		String filename = testFileDir + "/pm_create_project_user_param_with_valid_user.xml";
+		ParamType ctype = null;
+		String masterInstanceResult = null;
+		try { 
+			String requestString = getQueryString(filename);
+			OMElement requestElement = convertStringToOMElement(requestString); 
+			OMElement responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			JAXBElement responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			ResponseMessageType r = (ResponseMessageType)responseJaxb.getValue();
+			JAXBUnWrapHelper helper = new  JAXBUnWrapHelper();
+			masterInstanceResult = (String)helper.getObjectByClass(r.getMessageBody().getAny(),String.class);
+
+
+			//Check to see if really added
+			filename = testFileDir + "/pm_create_project_user_param_with_valid_user_check.xml";
+			requestString = getQueryString(filename);
+			requestElement = convertStringToOMElement(requestString); 
+			responseElement = getServiceClient(pmTargetEPR).sendReceive(requestElement);
+
+			//read test file and store query instance ;
+			//unmarshall this response string 
+			responseJaxb = PMJAXBUtil.getJAXBUtil().unMashallFromString(responseElement.toString());
+			r = (ResponseMessageType)responseJaxb.getValue();
+			helper = new  JAXBUnWrapHelper();
+			ParamsType allParams = (ParamsType)helper.getObjectByClass(r.getMessageBody().getAny(),ParamsType.class);
+
+			assertEquals( allParams.getParam().size(), 1);
+			for (ParamType param : allParams.getParam())
+			{
+				if (param.getName().equals("Bamboo_Param"))
+				{
+					ctype = param;
+					break;
+				}
+
+
+			}
+
+		} catch (Exception e) { 
+			e.printStackTrace();
+		}
+		assertNotNull(masterInstanceResult);
+		assertNotNull(ctype);
+		assertEquals(ctype.getName(),"Bamboo_Param");
+		assertEquals(ctype.getValue(),"my test");
+		assertEquals(ctype.getDatatype(),"T");
+	}	
+
+
+
 }
+
+
+
+
+

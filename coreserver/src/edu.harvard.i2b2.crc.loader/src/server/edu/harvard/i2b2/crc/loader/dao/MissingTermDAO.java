@@ -131,8 +131,7 @@ public class MissingTermDAO extends CRCLoaderDAO implements IMissingTermDAO {
 			}
 			conn = getDataSource().getConnection();
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DataSourceLookupDAOFactory.SQLSERVER) || dataSourceLookup.getServerType().equalsIgnoreCase(
-							DataSourceLookupDAOFactory.POSTGRES)) {
+					DataSourceLookupDAOFactory.SQLSERVER)) {
 				sql = " select tot,concept_cd, rnum  from ( "
 						+ " select count(*) tot, obs1.concept_cd, row_number() over (order by obs1.concept_cd asc)  rnum from "
 						+ this.getDbSchemaName() + "observation_fact obs1 where concept_cd not in ( "
@@ -141,8 +140,7 @@ public class MissingTermDAO extends CRCLoaderDAO implements IMissingTermDAO {
 						+ uploadConstrainSql + " group by obs1.concept_cd) f where rnum between " + startPos + " and "  + endPos ;
 			} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					DataSourceLookupDAOFactory.ORACLE)) {
-				sql = " select tot, concept_cd, rnum from ( "
-						+ " select count(*) tot, obs1.concept_cd, rownum  rnum from "
+				sql = " select tot, concept_cd, rnum from (select count(*) tot, obs1.concept_cd, rownum  rnum from "
 						+ this.getDbSchemaName()
 						+ "observation_fact obs1 where  "
 						+ " concept_cd not in ( "
@@ -203,8 +201,7 @@ public class MissingTermDAO extends CRCLoaderDAO implements IMissingTermDAO {
 			}
 			conn = getDataSource().getConnection();
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DataSourceLookupDAOFactory.SQLSERVER) || dataSourceLookup.getServerType().equalsIgnoreCase(
-							DataSourceLookupDAOFactory.POSTGRES)) {
+					DataSourceLookupDAOFactory.SQLSERVER)) {
 				sql = " select tot,modifier_cd, rnum  from ( "
 					+ " select count(*) tot, obs1.modifier_cd, row_number() over (order by obs1.modifier_cd asc)  rnum from "
 					+ this.getDbSchemaName() + "observation_fact obs1 where modifier_cd not in ( "
@@ -274,8 +271,7 @@ public class MissingTermDAO extends CRCLoaderDAO implements IMissingTermDAO {
 			}
 			conn = getDataSource().getConnection();
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DataSourceLookupDAOFactory.SQLSERVER) || dataSourceLookup.getServerType().equalsIgnoreCase(
-							DataSourceLookupDAOFactory.POSTGRES)) {
+					DataSourceLookupDAOFactory.SQLSERVER)) {
 				sql = " select tot,provider_id, rnum  from ( "
 					+ " select count(*) tot, obs1.provider_id, row_number() over (order by obs1.provider_id asc)  rnum from "
 					+ this.getDbSchemaName() + "observation_fact obs1 where provider_id not in ( "

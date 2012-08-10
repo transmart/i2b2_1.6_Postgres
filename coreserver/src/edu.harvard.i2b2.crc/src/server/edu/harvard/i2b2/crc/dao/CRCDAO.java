@@ -116,7 +116,7 @@ public abstract class CRCDAO {
 	}
 
 	public void setDbSchemaName(String dbSchemaName) {
-		if (dbSchemaName != null && (dbSchemaName.trim().equals("") || dbSchemaName.endsWith("."))) { 
+		if (dbSchemaName != null && dbSchemaName.endsWith(".")) { 
 			this.dbSchemaName = dbSchemaName.trim();
 		}
 		else if (dbSchemaName != null) { 

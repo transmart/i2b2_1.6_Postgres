@@ -177,6 +177,40 @@ $Id: build.xml,v 1.4 2008/07/23 19:53:55 tomcat Exp $
 
 
 
+	<!-- =================================================================== -->
+	<!-- 			RUN JUNIT TESTS AND GENERATE REPORT			 			 -->
+	<!-- =================================================================== -->
+	<target name="test" depends="compile"  description="Compile and run JUnit tests and testcases">
+		<echo message="${Name}: Running test cases!" />
+		<property name="reports.dir" value="${report}" />
+		<!-- run the unit tests -->
+		<junit fork="yes" haltonfailure="no" maxmemory="512M" printsummary="on" errorProperty="test.failed" failureProperty="test.failed" showoutput="false">
+			<formatter type="xml" />
+			<jvmarg value="-Dtestfiledir=${testfiledir}" />
+			<jvmarg value="-Djava.endorsed.dirs=endorsed_lib" />
+			<!--<test name="AllTests" todir="${report.dir}"/>-->
+			<batchtest fork="yes" todir="${reports.dir}">
+				<fileset dir="test">
+					<include name="**/FRServiceRESTTest.java" />
+				</fileset>
+			</batchtest>
+			<classpath>
+				<path refid="classpath" />
+			</classpath>
+		</junit>
+		<!-- create the junit test report -->
+		<echo message="${Name}: Generating reports!" />
+		<junitreport>
+			<fileset dir="${reports.dir}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report format="frames" todir="${reports.dir}" />
+		</junitreport>
+		<fail message="Tests failed." if="test.failed" />
+	</target>
+	
+
+
 </project>
 
 

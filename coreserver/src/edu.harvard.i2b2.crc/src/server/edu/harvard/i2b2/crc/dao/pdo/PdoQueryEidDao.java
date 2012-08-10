@@ -98,7 +98,7 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 				query = conn.prepareStatement(finalSql);
 				ArrayDescriptor desc = ArrayDescriptor.createDescriptor(
 						"QT_PDO_QRY_STRING_ARRAY", conn1);
-				
+
 				oracle.sql.ARRAY paramArray = new oracle.sql.ARRAY(desc, conn1,
 						encounterNumList.toArray(new String[] {}));
 				query.setArray(1, paramArray);
@@ -110,7 +110,7 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 				// execute sql
 				log.debug("creating temp table");
 				java.sql.Statement tempStmt = conn.createStatement();
-					
+
 				uploadTempTable(tempStmt, encounterNumList);
 				String finalSql = "SELECT "
 						+ selectClause
@@ -119,36 +119,13 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 						+ "encounter_mapping em WHERE em.encounter_num IN (select distinct char_param1 FROM "
 						+ SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE
 						+ ") order by em_encounter_num";
-				
-				log.debug("Size of the encounter list "+ encounterNumList.size());
-				log.debug("Executing [" + finalSql + "]");
-
-				query = conn.prepareStatement(finalSql);
-				resultSet = query.executeQuery();
-			}  else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.POSTGRES)) {
-				// create temp table
-				// load to temp table
-				// execute sql
-				log.debug("creating temp table");
-				java.sql.Statement tempStmt = conn.createStatement();
-					
-				uploadTempTable(tempStmt, encounterNumList);
-				String finalSql = "SELECT "
-						+ selectClause
-						+ " FROM "
-						+ getDbSchemaName()
-						+ "encounter_mapping em WHERE em.encounter_num IN (select distinct char_param1 FROM "
-						+ FactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE
-						+ ") order by em_encounter_num";
-				
-				log.debug("Size of the encounter list "+ encounterNumList.size());
+				log.debug("Size of the encounter list "
+						+ encounterNumList.size());
 				log.debug("Executing [" + finalSql + "]");
 
 				query = conn.prepareStatement(finalSql);
 				resultSet = query.executeQuery();
 			}
-
 
 			RPDRPdoFactory.EidBuilder eidBuilder = new RPDRPdoFactory.EidBuilder(
 					detailFlag, blobFlag, statusFlag);
@@ -168,7 +145,7 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 				deleteTempTable(
 						conn,
 						SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE);
-			} 
+			}
 			try {
 				JDBCUtil.closeJdbcResource(null, query, conn);
 
@@ -414,45 +391,21 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 	}
 
 	private void uploadTempTable(Statement tempStmt, List<String> patientNumList)
-			throws SQLException {	
-		
-		// smuniraju: Extended to include POSTGRES 
-		/*String createTempInputListTable = "create table "
-			+ SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE
-			+ " ( char_param1 varchar(100) )";			
-		*/
-		String serverType = dataSourceLookup.getServerType();
-		String createTempInputListTable = "";
-		String tempTableName = "";
-		if(serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-			tempTableName = FactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE; 
-			createTempInputListTable = "create temporary table "
-				+ tempTableName
+			throws SQLException {
+		String createTempInputListTable = "create table "
+				+ SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE
 				+ " ( char_param1 varchar(100) )";
-		} else if(serverType.equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) {
-			tempTableName = SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE;
-			createTempInputListTable = "create table "
-				+ tempTableName
-				+ " ( char_param1 varchar(100) )";
-		}
-		
 		tempStmt.executeUpdate(createTempInputListTable);
-		
-		// log.debug("created temp table"+ SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE);
-		
+		log.debug("created temp table"
+				+ SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE);
 		// load to temp table
 		// TempInputListInsert inputListInserter = new
 		// TempInputListInsert(dataSource,TEMP_PDO_INPUTLIST_TABLE);
 		// inputListInserter.setBatchSize(100);
 		int i = 0;
 		for (String singleValue : patientNumList) {
-			// smuniraju: tablename will be read from variable tempTableName instead
-			/* tempStmt.addBatch("insert into "
-					+ SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE
-					+ " values ('" + singleValue + "' )");
-			*/
 			tempStmt.addBatch("insert into "
-					+ tempTableName
+					+ SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE
 					+ " values ('" + singleValue + "' )");
 			log.debug("adding batch" + singleValue);
 			i++;
@@ -545,20 +498,6 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 					;
 				}
 				String createTempInputListTable = "create table " + tempTable
-						+ " ( set_index int, char_param1 varchar(500) )";
-				tempStmt.executeUpdate(createTempInputListTable);
-				log.debug("created temp table" + tempTable);
-			} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				log.debug("creating temp table");
-				java.sql.Statement tempStmt = conn.createStatement();
-				tempTable = FactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE;
-				try {
-					// smuniraju: Added "if exists" clause to avoid transaction termination.
-					tempStmt.executeUpdate("drop table if exists " + tempTable);
-				} catch (SQLException sqlex) {
-					;
-				}
-				String createTempInputListTable = "create temporary table " + tempTable
 						+ " ( set_index int, char_param1 varchar(500) )";
 				tempStmt.executeUpdate(createTempInputListTable);
 				log.debug("created temp table" + tempTable);

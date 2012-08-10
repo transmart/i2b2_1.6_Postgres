@@ -36,6 +36,7 @@ import edu.harvard.i2b2.crc.delegate.ontology.CallOntologyUtil;
 import edu.harvard.i2b2.crc.ejb.role.MissingRoleException;
 import edu.harvard.i2b2.crc.role.AuthrizationHelper;
 import edu.harvard.i2b2.crc.util.LogTimingUtil;
+import edu.harvard.i2b2.crc.util.QueryProcessorUtil;
 import edu.harvard.i2b2.crc.util.SqlClauseUtil;
 
 /**
@@ -67,7 +68,10 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 		String resultTypeName = (String) param.get("ResultOptionName");
 		String processTimingFlag = (String) param.get("ProcessTimingFlag");
 		int obfuscatedRecordCount = (Integer) param.get("ObfuscatedRecordCount");
+		int recordCount = (Integer) param.get("RecordCount");
 		int transactionTimeout = (Integer) param.get("TransactionTimeout");
+		boolean obfscDataRoleFlag = (Boolean)param.get("ObfuscatedRoleFlag");
+		
 		TransactionManager tm = (TransactionManager) param
 				.get("TransactionManager");
 		this
@@ -84,12 +88,10 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 		String itemKey = "";
 
 		int actualTotal = 0, obsfcTotal = 0;
-		boolean obfscDataRoleFlag = false;
+		
 		try {
 			LogTimingUtil logTimingUtil = new LogTimingUtil();
 			logTimingUtil.setStartTime();
-			obfscDataRoleFlag = checkDataObscRole(sfDAOFactory
-					.getOriginalDataSourceLookup(), roles);
 			itemKey = getItemKeyFromResultType(sfDAOFactory, resultTypeName);
 
 			log.debug("Result type's " + resultTypeName + " item key value "
@@ -119,6 +121,10 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 					+ this.getDbSchemaName()
 					+ "concept_dimension  where concept_path like ?)";
 			
+			//get break down count sigma from property file 
+			
+			double breakdownCountSigma = GaussianBoxMuller.getBreakdownCountSigma();
+			double obfuscatedMinimumValue = GaussianBoxMuller.getObfuscatedMinimumVal();
 			
 			ResultType resultType = new ResultType();
 			resultType.setName(resultTypeName);
@@ -131,9 +137,18 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 
 			for (ConceptType conceptType : conceptsType.getConcept()) {
 
+				String joinTableName = "observation_fact";
+				if (conceptType.getTablename().equalsIgnoreCase(
+						"patient_dimension")) { 
+					joinTableName = "patient_dimension";
+				} else if (conceptType.getTablename().equalsIgnoreCase(
+						"visit_dimension")) { 
+					joinTableName = "visit_dimension"; 
+				}
+				
 				String dimCode = this.getDimCodeInSqlFormat(conceptType);
 				
-				 itemCountSql = " select count(distinct PATIENT_NUM) as item_count  from " +  this.getDbSchemaName() + " observation_fact " +  
+				 itemCountSql = " select count(distinct PATIENT_NUM) as item_count  from " +  this.getDbSchemaName() + joinTableName +  
 				 " where " + " patient_num in (select patient_num from "
 				+ TEMP_DX_TABLE
 				+ " )  and "+ conceptType.getFacttablecolumn() + " IN (select "
@@ -144,12 +159,7 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 				+ dimCode + ")";
 				 
 				stmt = sfConn.prepareStatement(itemCountSql);
-				
-				// // smuniraju: Currently, in postgres, a timeout value > 0 will result in "setQueryTimeout is not yet implemented"
-				// stmt.setQueryTimeout(transactionTimeout);
-				int queryTimeout = (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) ? 0 : transactionTimeout;
-				stmt.setQueryTimeout(queryTimeout);
-				
+				stmt.setQueryTimeout(transactionTimeout);
 				log.debug("Executing count sql [" + itemCountSql + "]");
 				
 				//
@@ -174,7 +184,7 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 				if (obfscDataRoleFlag) {
 					GaussianBoxMuller gaussianBoxMuller = new GaussianBoxMuller();
 					demoCount = (int) gaussianBoxMuller
-							.getNormalizedValueForCount(demoCount);
+							.getNormalizedValueForCount(demoCount,breakdownCountSigma,obfuscatedMinimumValue);
 					obsfcTotal += demoCount;
 				}
 				DataType mdataType = new DataType();
@@ -283,7 +293,7 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 							// read the description from result type
 							
 						} else { 
-							obfuscatedRecordCount = actualTotal;
+							obfuscatedRecordCount = recordCount;
 						}
 						IQueryResultTypeDao resultTypeDao = sfDAOFactory.getQueryResultTypeDao();
 						List<QtQueryResultType> resultTypeList = resultTypeDao
@@ -301,7 +311,7 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 						resultInstanceDao.updatePatientSet(resultInstanceId,
 								QueryStatusTypeId.STATUSTYPE_ID_FINISHED, null,
 								//obsfcTotal, 
-								obfuscatedRecordCount, actualTotal, obfusMethod);
+								obfuscatedRecordCount, recordCount, obfusMethod);
 
 						description = resultTypeList.get(0)
 						.getDescription() + " for \"" + queryName +"\"";
@@ -358,44 +368,7 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 		return itemKey;
 	}
 
-	private boolean checkDataObscRole(
-			DataSourceLookup originalDataSourceLookup, List<String> roles)
-			throws I2B2Exception {
-		boolean noDataAggFlag = false, noDataObfscFlag = false;
 
-		String domainId = originalDataSourceLookup.getDomainId();
-		String projectId = originalDataSourceLookup.getProjectPath();
-		String userId = originalDataSourceLookup.getOwnerId();
-
-		DAOFactoryHelper helper = new DAOFactoryHelper(domainId, projectId,
-				userId);
-
-		IDAOFactory daoFactory = helper.getDAOFactory();
-		AuthrizationHelper authHelper = new AuthrizationHelper(domainId,
-				projectId, userId, daoFactory);
-
-		try {
-			authHelper.checkRoleForProtectionLabel(
-					"SETFINDER_QRY_WITHOUT_DATAOBFSC", roles);
-		} catch (MissingRoleException noRoleEx) {
-			noDataAggFlag = true;
-		} catch (I2B2Exception e) {
-			throw e;
-		}
-		try {
-			authHelper.checkRoleForProtectionLabel(
-					"SETFINDER_QRY_WITH_DATAOBFSC", roles);
-		} catch (MissingRoleException noRoleEx) {
-			noDataObfscFlag = true;
-		} catch (I2B2Exception e) {
-			throw e;
-		}
-		if (noDataAggFlag && !noDataObfscFlag) {
-			return true;
-		} else {
-			return false;
-		}
-	}
 	
 	private String getDimCodeInSqlFormat(ConceptType conceptType)  {
 		String theData = null;
@@ -411,7 +384,7 @@ public class QueryResultGenerator extends CRCDAO implements IResultGenerator {
 				&& conceptType.getColumndatatype().equalsIgnoreCase("D")) {
 			theData = SqlClauseUtil.handleMetaDataDateValue(
 					conceptType.getOperator(), conceptType.getDimcode());
-		}		
+		}
 		return theData;
 	}
 }

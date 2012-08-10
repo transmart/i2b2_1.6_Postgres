@@ -38,7 +38,6 @@ import edu.harvard.i2b2.ontology.datavo.vdo.GetReturnType;
 import edu.harvard.i2b2.ontology.datavo.vdo.XmlValueType;
 import edu.harvard.i2b2.ontology.util.OntologyUtil;
 import edu.harvard.i2b2.ontology.util.Roles;
-import edu.harvard.i2b2.ontology.util.StringUtil;
 
 public class GetCategoriesDao extends JdbcDaoSupport {
 	
@@ -120,7 +119,7 @@ public class GetCategoriesDao extends JdbcDaoSupport {
 	            	child.setTablename(rs.getString("c_tablename")); 
 	            	child.setColumnname(rs.getString("c_columnname")); 
 	            	child.setColumndatatype(rs.getString("c_columndatatype")); 
-	            	child.setOperator(rs.getString("c_operator"));
+	            	child.setOperator(rs.getString("c_operator")); 
 	            	child.setDimcode(rs.getString("c_dimcode")); 
 	            	child.setTooltip(rs.getString("c_tooltip"));
 	            }

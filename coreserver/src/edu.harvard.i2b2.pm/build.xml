@@ -60,7 +60,7 @@
 		<javac destdir="${classes}" optimize="${javac.opt}" debug="${javac.debug}">
 			<src path="${src}" />
 			<src path="${gensrc}" />
-		<!--	<src path="${src}/test" />  -->
+			<src path="test" /> 
 			<classpath refid="classpath" />
 		</javac>
 	</target>
@@ -103,9 +103,6 @@
 	<target name="dist-server"  description="package application for distribution/deployment">
 		<echo message="${Name}: Creating the server archive package!" />
 		<jar compress="true" jarfile="${dist}/${Name}-Server.jar">
-			<fileset dir="${etc}/spring">
-				<include name="**" />
-			</fileset>
 		</jar>
 	</target>
 
@@ -143,7 +140,8 @@
 
 	<!-- =================================================================== -->
 	<!-- 								JBOSS DEPLOY ARCHIVE ONLY						 -->
-	<!-- =================================================================== -->	<target name="service_deploy">
+	<!-- =================================================================== -->	
+	<target name="service_deploy">
 		<echo message="${Name}: Copying archive package to app server ${jboss.home}" />
 		<copy todir="${jboss.home}/server/default/deploy">
 			<fileset dir="${dist}">
@@ -159,54 +157,37 @@
 		</copy>
 	</target>
 	
-	<!-- ==================================================================== -->
-	<!-- 							Tomcat	start						  	  -->
-	<!-- ==================================================================== -->
-	<target name="tomcat-start" description="Start tomcat">
-		<fail unless="tomcat.home" message="You need to specify the Tomcat home: -Dtomcat.home=c:/tomcat or use build.properties" />
-		<java jar="${tomcat.home}/bin/bootstrap.jar" fork="true">
-			<jvmarg value="-Dcatalina.home=${tomcat.home}" />
-		</java>
-	</target>
-
-	<!-- ==================================================================== -->
-	<!-- 							Tomcat	stop						      -->
-	<!-- =================================================================    -->
-	<target name="tomcat-stop" description="Stop tomcat">
-		<fail unless="tomcat.home" message="You need to specify the Tomcat home: -Dtomcat.home=c:/tomcat or use build.properties" />
-		<java jar="${tomcat.home}/bin/bootstrap.jar" fork="true">
-			<jvmarg value="-Dcatalina.home=${tomcat.home}" />
-			<arg line="stop" />
-		</java>
-	</target>
-
-	<!-- ==================================================================== -->
-	<!-- 							Tomcat	Deploy						  	  -->
-	<!-- ==================================================================== -->
-	<!-- Before running this target, make sure Tomcat is stopped -->
-	<target name="tomcat-deploy" depends="dist" description="Deploy Axis2 archive and its dependend files to tomcat. 
-					Before running this target, make sure Tomcat is stopped">
-		<fail unless="tomcat.home" message="You need to specify the Tomcat home: -Dtomcat.home=c:/tomcat or use build.properties" />
-		<property name="axis2lib.dir" value="${tomcat.home}/webapps/axis2/WEB-INF/lib" />
-		<property name="axis2service.dir" value="${tomcat.home}/webapps/axis2/WEB-INF/services" />
-		<property name="i2b2common.dir" value="../${i2b2CommonProject}/" />
-		<property name="i2b2commonjaxb.dir" value="${i2b2common.dir}/lib/jaxb/" />
-
-		<copy todir="${axis2lib.dir}" file="dist/Workplace-core.jar" overwrite="yes" />
-		<!--
-		<copy todir="${axis2lib.dir}" file="${i2b2common.dir}/dist/i2b2Common-Core.jar" overwrite="yes" />
-		-->
-		<copy todir="${axis2lib.dir}">
-			<fileset dir="${i2b2commonjaxb.dir}">
-				<exclude name="jaxb1*.jar" />
-				<exclude name="jsr*.jar" />
+	
+	<!-- =================================================================== -->
+	<!-- 			RUN JUNIT TESTS AND GENERATE REPORT			 			 -->
+	<!-- =================================================================== -->
+	<target name="test" depends="compile" description="Compile and run JUnit tests and testcases">
+		<echo message="${Name}: Running test cases!" />
+		<property name="reports.dir" value="${report}" />
+		<!-- run the unit tests -->
+		<junit fork="yes" haltonfailure="no" maxmemory="512M" printsummary="on" errorProperty="test.failed" failureProperty="test.failed" showoutput="false">
+			<formatter type="xml" />
+			<jvmarg value="-Dtestfiledir=${testfiledir}" />
+			<jvmarg value="-Djava.endorsed.dirs=endorsed_lib" />
+			<!--<test name="AllTests" todir="${report.dir}"/>-->
+			<batchtest fork="yes" todir="${reports.dir}">
+				<fileset dir="test">
+					<include name="**/PMServiceRESTTest.java" />
+				</fileset>
+			</batchtest>
+			<classpath>
+				<path refid="classpath" />
+			</classpath>
+		</junit>
+		<!-- create the junit test report -->
+		<echo message="${Name}: Generating reports!" />
+		<junitreport>
+			<fileset dir="${reports.dir}">
+				<include name="TEST-*.xml" />
 			</fileset>
-		</copy>
-		<copy todir="${axis2service.dir}">
-			<fileset dir="${dist}">
-				<include name="**/*.aar" />
-			</fileset>
-		</copy>
+			<report format="frames" todir="${reports.dir}" />
+		</junitreport>
+		<fail message="Tests failed." if="test.failed" />
 	</target>
 
 </project>

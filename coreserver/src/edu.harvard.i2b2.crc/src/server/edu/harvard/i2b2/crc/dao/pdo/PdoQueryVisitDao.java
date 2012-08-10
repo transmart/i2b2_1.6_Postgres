@@ -36,6 +36,7 @@ import edu.harvard.i2b2.crc.dao.pdo.output.VisitFactRelated;
 import edu.harvard.i2b2.crc.datavo.db.DataSourceLookup;
 import edu.harvard.i2b2.crc.datavo.pdo.EventSet;
 import edu.harvard.i2b2.crc.datavo.pdo.EventType;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.EventListType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.PatientListType;
 
@@ -48,12 +49,17 @@ import edu.harvard.i2b2.crc.datavo.pdo.query.PatientListType;
 public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 
 	private DataSourceLookup dataSourceLookup = null;
+	private List<ParamType> metaDataParamList = null;
 
 	public PdoQueryVisitDao(DataSourceLookup dataSourceLookup,
 			DataSource dataSource) {
 		setDbSchemaName(dataSourceLookup.getFullSchema());
 		setDataSource(dataSource);
 		this.dataSourceLookup = dataSourceLookup;
+	}
+	
+	public void setMetaDataParamList(List<ParamType> metaDataParamList) { 
+		this.metaDataParamList = metaDataParamList; 
 	}
 
 	/**
@@ -76,6 +82,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 			conn = getDataSource().getConnection();
 			VisitFactRelated visitRelated = new VisitFactRelated(
 					buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+			visitRelated.setMetaDataParamList(this.metaDataParamList);
 			String selectClause = visitRelated.getSelectClause();
 			String serverType = dataSourceLookup.getServerType();
 			if (serverType.equalsIgnoreCase(DAOFactoryHelper.ORACLE)) {
@@ -117,35 +124,13 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 
 				query = conn.prepareStatement(finalSql);
 
-			} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				log.debug("creating temp table");
-				tempTableName = this.getDbSchemaName()
-						+ FactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE;
-				java.sql.Statement tempStmt = conn.createStatement();
-
-				try {
-					tempStmt.executeUpdate("drop table if exists " + tempTableName);
-				} catch (SQLException sqlex) {
-					;
-				}
-
-				uploadTempTable(tempStmt, tempTableName, encounterNumList);
-				String finalSql = "SELECT "
-						+ selectClause
-						+ " FROM "
-						+ getDbSchemaName()
-						+ "visit_dimension visit WHERE visit.encounter_num IN (select distinct char_param1 FROM "
-						+ tempTableName + ") order by encounter_num";
-				log.debug("Executing [" + finalSql + "]");
-
-				query = conn.prepareStatement(finalSql);
 			}
 			ResultSet resultSet = query.executeQuery();
 			I2B2PdoFactory.EventBuilder eventBuilder = new I2B2PdoFactory().new EventBuilder(
 					detailFlag, blobFlag, statusFlag);
 			while (resultSet.next()) {
 				EventType visitDimensionType = eventBuilder
-						.buildEventSet(resultSet);
+						.buildEventSet(resultSet,this.metaDataParamList);
 				visitDimensionSet.getEvent().add(visitDimensionType);
 			}
 
@@ -160,10 +145,6 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 					DAOFactoryHelper.SQLSERVER)) {
 				PdoTempTableUtil tempUtil = new PdoTempTableUtil(); 
 				tempUtil.deleteTempTableSqlServer(conn, tempTableName);
-			} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.POSTGRES)) {
-				PdoTempTableUtil tempUtil = new PdoTempTableUtil(); 
-				tempUtil.deleteTempTablePostgres(conn, tempTableName);
 			}
 			try {
 				JDBCUtil.closeJdbcResource(null, query, conn);
@@ -192,6 +173,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 		String inSqlClause = visitListTypeHandler.generateWhereClauseSql();
 		VisitFactRelated visitRelated = new VisitFactRelated(
 				buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+		visitRelated.setMetaDataParamList(this.metaDataParamList);
 		String selectClause = visitRelated.getSelectClause();
 
 		String mainSqlString = " SELECT " + selectClause + "  FROM "
@@ -231,7 +213,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 				// VisitDimensionType visitDimensionType =
 				// getVisitDimensionType(resultSet);
 				EventType visitDimensionType = eventBuilder
-						.buildEventSet(resultSet);
+						.buildEventSet(resultSet, metaDataParamList);
 				visitDimensionSet.getEvent().add(visitDimensionType);
 			}
 		} catch (SQLException sqlEx) {
@@ -275,6 +257,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 
 		VisitFactRelated visitRelated = new VisitFactRelated(
 				buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+		visitRelated.setMetaDataParamList(this.metaDataParamList);
 		String selectClause = visitRelated.getSelectClause();
 		String mainSqlString = " SELECT " + selectClause + "  FROM "
 				+ getDbSchemaName()
@@ -314,7 +297,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 				// VisitDimensionType visitDimensionType =
 				// getVisitDimensionType(resultSet);
 				EventType visitDimensionType = eventBuilder
-						.buildEventSet(resultSet);
+						.buildEventSet(resultSet,this.metaDataParamList);
 				visitDimensionSet.getEvent().add(visitDimensionType);
 			}
 
@@ -342,19 +325,10 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 		return visitDimensionSet;
 	}
 
-	private void uploadTempTable(Statement tempStmt, String tempTableName, 
+	private void uploadTempTable(Statement tempStmt, String tempTableName,
 			List<String> patientNumList) throws SQLException {
-		
-		// smuniraju: Extended to include POSTGRES 
-		String serverType = dataSourceLookup.getServerType(); 
-		String createTempInputListTable = "";
-		if(serverType.equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) {
-			createTempInputListTable = "create table " + tempTableName
-			+ " ( char_param1 varchar(100) )";
-		} else if(serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-			createTempInputListTable = "create temporary table " + tempTableName
-			+ " ( char_param1 varchar(100) )";
-		}		
+		String createTempInputListTable = "create table " + tempTableName
+				+ " ( char_param1 varchar(100) )";
 		tempStmt.executeUpdate(createTempInputListTable);
 		log.debug("created temp table" + tempTableName);
 		// load to temp table
@@ -389,6 +363,8 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 				detailFlag, blobFlag, statusFlag);
 		VisitFactRelated eventFactRelated = new VisitFactRelated(
 				buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+		eventFactRelated.setMetaDataParamList(this.metaDataParamList);
+		
 		String selectClause = eventFactRelated.getSelectClause();
 		String serverType = dataSourceLookup.getServerType();
 		String factTempTable = "";
@@ -410,22 +386,6 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 					;
 				}
 				String createTempInputListTable = "create table "
-						+ factTempTable
-						+ " ( set_index int, char_param1 varchar(500) )";
-				tempStmt.executeUpdate(createTempInputListTable);
-				log.debug("created temp table" + factTempTable);
-			} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				log.debug("creating temp table");
-				java.sql.Statement tempStmt = conn.createStatement();
-				factTempTable = getDbSchemaName() + FactRelatedQueryHandler.TEMP_FACT_PARAM_TABLE;
-				
-				 try {				 
-					tempStmt.executeUpdate("drop table if exists " + factTempTable);
-				} catch (SQLException sqlex) {
-					;
-				}
-				
-				String createTempInputListTable = "create temporary table "
 						+ factTempTable
 						+ " ( set_index int, char_param1 varchar(500) )";
 				tempStmt.executeUpdate(createTempInputListTable);
@@ -469,7 +429,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 			resultSet = query.executeQuery();
 
 			while (resultSet.next()) {
-				EventType event = eventBuilder.buildEventSet(resultSet);
+				EventType event = eventBuilder.buildEventSet(resultSet,this.metaDataParamList);
 				eventSet.getEvent().add(event);
 			}
 		} catch (SQLException sqlEx) {

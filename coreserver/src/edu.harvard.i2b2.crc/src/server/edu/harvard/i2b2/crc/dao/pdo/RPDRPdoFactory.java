@@ -14,6 +14,8 @@ import java.sql.Clob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 import edu.harvard.i2b2.common.util.db.JDBCUtil;
 import edu.harvard.i2b2.common.util.jaxb.DTOFactory;
@@ -148,7 +150,7 @@ public class RPDRPdoFactory {
 					try {
 						BlobType blobType = new BlobType();
 						blobType.getContent().add(
-								JDBCUtil.getClobString(observationClob));
+								JDBCUtil.getClobStringWithLinebreak(observationClob));
 						observation.setObservationBlob(blobType);
 					} catch (IOException ioEx) {
 						ioEx.printStackTrace();
@@ -209,7 +211,7 @@ public class RPDRPdoFactory {
 		 * @throws SQLException
 		 * @throws IOException
 		 */
-		public PatientType buildPatientSet(ResultSet rowSet, String source)
+		public PatientType buildPatientSet(ResultSet rowSet, String source,List<ParamType> metaDataParamList)
 				throws SQLException, IOException {
 			PatientType patientDimensionType = new PatientType();
 			PatientIdType patientIdType = new PatientIdType();
@@ -219,89 +221,28 @@ public class RPDRPdoFactory {
 
 			if (patientDetailFlag) {
 
-				ParamType vitalParamType = new ParamType();
-				vitalParamType.setName(rowSet.getString("vital_status_name"));
-				vitalParamType.setValue(rowSet
-						.getString("patient_vital_status_cd"));
-				vitalParamType.setColumn("vital_status_cd");
-				patientDimensionType.getParam().add(vitalParamType);
+				
 
-				Date birthDate = rowSet.getTimestamp("patient_birth_date");
+				
 
-				if (birthDate != null) {
-					ParamType birthParamType = new ParamType();
-					birthParamType.setColumn("birth_date");
-					birthParamType.setName("birth_date");
-					birthParamType.setValue(dtoFactory.getXMLGregorianCalendar(
-							birthDate.getTime()).toString());
-					patientDimensionType.getParam().add(birthParamType);
+				ParamTypeValueBuilder paramValBuilder = new ParamTypeValueBuilder();
+				for (Iterator<ParamType> metaParamIterator = metaDataParamList.iterator(); metaParamIterator.hasNext();) { 
+					ParamType metaParamType = metaParamIterator.next();
+					if (metaParamType.getType().equalsIgnoreCase("string")) { 
+						patientDimensionType.getParam().add(paramValBuilder.buildParamType(metaParamType,"patient_","_name",rowSet));	
+					} else { 
+						patientDimensionType.getParam().add(paramValBuilder.buildParamType(metaParamType,"patient_",null,rowSet));
+					}
+					
+					
 				}
-
-				Date deathDate = rowSet.getTimestamp("patient_death_date");
-
-				if (deathDate != null) {
-					ParamType deathParamType = new ParamType();
-					deathParamType.setColumn("death_date");
-					deathParamType.setName("death_date");
-					deathParamType.setValue(dtoFactory.getXMLGregorianCalendar(
-							deathDate.getTime()).toString());
-					patientDimensionType.getParam().add(deathParamType);
-				}
-
-				ParamType sexCdParamType = new ParamType();
-				sexCdParamType.setValue(rowSet.getString("patient_sex_cd"));
-				sexCdParamType.setName(rowSet.getString("sex_name"));
-				sexCdParamType.setColumn("sex_cd");
-				patientDimensionType.getParam().add(sexCdParamType);
-
-				ParamType ageParamType = new ParamType();
-				ageParamType.setValue(rowSet
-						.getString("patient_age_in_years_num"));
-				ageParamType.setColumn("age_in_years_num");
-				ageParamType.setName("age_in_years_num");
-				patientDimensionType.getParam().add(ageParamType);
-
-				ParamType languageParamType = new ParamType();
-				languageParamType.setValue(rowSet
-						.getString("patient_language_cd"));
-				languageParamType.setName(rowSet.getString("language_name"));
-				languageParamType.setColumn("language_cd");
-				patientDimensionType.getParam().add(languageParamType);
-
-				ParamType raceParamType = new ParamType();
-				raceParamType.setValue(rowSet.getString("patient_race_cd"));
-				raceParamType.setName(rowSet.getString("race_name"));
-				raceParamType.setColumn("race_cd");
-				patientDimensionType.getParam().add(raceParamType);
-
-				ParamType religionParamType = new ParamType();
-				religionParamType.setValue(rowSet
-						.getString("patient_religion_cd"));
-				religionParamType.setName(rowSet.getString("religion_name"));
-				religionParamType.setColumn("religion_cd");
-				patientDimensionType.getParam().add(religionParamType);
-
-				ParamType maritalParamType = new ParamType();
-				maritalParamType.setValue(rowSet
-						.getString("patient_marital_status_cd"));
-				maritalParamType.setName(rowSet
-						.getString("marital_status_name"));
-				maritalParamType.setColumn("marital_status_cd");
-				patientDimensionType.getParam().add(maritalParamType);
-
-				ParamType stateParamType = new ParamType();
-				stateParamType.setName("statecityzip_path_char");
-				stateParamType.setColumn("statecityzip_path_char");
-				stateParamType.setValue(rowSet.getString("patient_zip_cd"));
-				patientDimensionType.getParam().add(stateParamType);
-
 			}
 
 			if (patientBlobFlag) {
 				if (rowSet.getClob("patient_patient_blob") != null) {
 					BlobType blobType = new BlobType();
 					blobType.getContent().add(
-							JDBCUtil.getClobString(rowSet
+							JDBCUtil.getClobStringWithLinebreak(rowSet
 									.getClob("patient_patient_blob")));
 				}
 			}
@@ -378,7 +319,7 @@ public class RPDRPdoFactory {
 				if (providerClob != null) {
 					BlobType blobType = new BlobType();
 					blobType.getContent().add(
-							JDBCUtil.getClobString(providerClob));
+							JDBCUtil.getClobStringWithLinebreak(providerClob));
 					providerDimensionType.setObserverBlob(blobType);
 				}
 			}
@@ -457,7 +398,7 @@ public class RPDRPdoFactory {
 				if (conceptClob != null) {
 					BlobType blobType = new BlobType();
 					blobType.getContent().add(
-							JDBCUtil.getClobString(conceptClob));
+							JDBCUtil.getClobStringWithLinebreak(conceptClob));
 					conceptDimensionType.setConceptBlob(blobType);
 				}
 			}
@@ -536,7 +477,7 @@ public class RPDRPdoFactory {
 				if (modifierClob != null) {
 					BlobType blobType = new BlobType();
 					blobType.getContent().add(
-							JDBCUtil.getClobString(modifierClob));
+							JDBCUtil.getClobStringWithLinebreak(modifierClob));
 					modifierDimensionType.setModifierBlob(blobType);
 				}
 			}
@@ -594,7 +535,7 @@ public class RPDRPdoFactory {
 		 * @throws SQLException
 		 * @throws IOException
 		 */
-		public EventType buildEventSet(ResultSet rowSet, String source)
+		public EventType buildEventSet(ResultSet rowSet, String source,List<ParamType> metaDataParamList)
 				throws SQLException, IOException {
 			EventType visitDimensionType = new EventType();
 
@@ -607,35 +548,18 @@ public class RPDRPdoFactory {
 			eventId.setValue(rowSet.getString("visit_encounter_num"));
 			eventId.setSource(source);
 			visitDimensionType.setEventId(eventId);
-
+			ParamTypeValueBuilder paramValBuilder = new ParamTypeValueBuilder();
+			
 			if (eventDetailFlag) {
-				ParamType inoutParamType = new ParamType();
-				inoutParamType.setValue(rowSet.getString("visit_inout_cd"));
-				inoutParamType.setName(rowSet.getString("inout_name"));
-				inoutParamType.setColumn("inout_cd");
-				visitDimensionType.getParam().add(inoutParamType);
-
-				ParamType locationParamType = new ParamType();
-				locationParamType.setValue(rowSet
-						.getString("visit_location_cd"));
-				locationParamType.setName(rowSet.getString("location_name"));
-				locationParamType.setColumn("location_cd");
-				visitDimensionType.getParam().add(locationParamType);
-
-				ParamType siteParamType = new ParamType();
-				siteParamType.setName(rowSet.getString("visit_location_path"));
-				siteParamType.setColumn("location_path");
-				// locationParamType.setColumn("site_cd");
-				siteParamType.setValue(rowSet.getString("visit_location_path"));
-				visitDimensionType.getParam().add(siteParamType);
-
-				ParamType activeStatusParamType = new ParamType();
-				activeStatusParamType.setValue(rowSet
-						.getString("visit_active_status_cd"));
-				activeStatusParamType.setName(rowSet
-						.getString("active_status_name"));
-				activeStatusParamType.setColumn("active_status_cd");
-				visitDimensionType.getParam().add(activeStatusParamType);
+				for (Iterator<ParamType> metaParamIterator = metaDataParamList.iterator(); metaParamIterator.hasNext();) { 
+					ParamType metaParamType = metaParamIterator.next();
+					
+					if (metaParamType.getType().equalsIgnoreCase("string")) {
+						visitDimensionType.getParam().add(paramValBuilder.buildParamType(metaParamType,"visit_","_name",rowSet));
+					} else { 
+						visitDimensionType.getParam().add(paramValBuilder.buildParamType(metaParamType,"visit_",null,rowSet));
+					}
+				}
 
 				Date startDate = rowSet.getTimestamp("visit_start_date");
 
@@ -658,7 +582,7 @@ public class RPDRPdoFactory {
 				if (visitClob != null) {
 					BlobType blobType = new BlobType();
 					blobType.getContent()
-							.add(JDBCUtil.getClobString(visitClob));
+							.add(JDBCUtil.getClobStringWithLinebreak(visitClob));
 					visitDimensionType.setEventBlob(blobType);
 				}
 			}

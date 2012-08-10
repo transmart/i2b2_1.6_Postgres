@@ -7,6 +7,8 @@
      
  
     <xs:element name="mappings" type="map:mappingsType"/>
+     <xs:element name="hierarchyMappings" type="map:hierarchyMappingsType"/>
+	 <xs:element name="allMappings" type="xs:string" />
  
    <xs:complexType name="mappingsType">
         <xs:sequence>
@@ -14,5 +16,10 @@
         </xs:sequence>
     </xs:complexType>
 
+   <xs:complexType name="hierarchyMappingsType">
+        <xs:sequence>
+            <xs:element name="hierarchyMapping" type="map:hierarchyMapType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>  
     
 </xs:schema>

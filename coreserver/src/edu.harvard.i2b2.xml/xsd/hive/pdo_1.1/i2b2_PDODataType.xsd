@@ -361,7 +361,11 @@
 			<xs:extension base="xs:string">
 				<xs:attribute name="column" type="xs:string"
 					use="optional" />
+				<xs:attribute name="column_descriptor" type="xs:string"
+					use="optional" />
 				<xs:attribute name="name" type="xs:string"
+					use="optional" />
+				<xs:attribute name="type" type="xs:string"
 					use="optional" />
 			</xs:extension>
 		</xs:simpleContent>

@@ -11,9 +11,11 @@ package edu.harvard.i2b2.crc.dao.pdo.output;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Iterator;
+import java.util.List;
 
 import edu.harvard.i2b2.crc.datavo.pdo.query.OutputOptionType;
-
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 
 /**
  * Class to generate select, join, where clause
@@ -22,9 +24,30 @@ import edu.harvard.i2b2.crc.datavo.pdo.query.OutputOptionType;
  * @author rkuttan
  */
 public class PatientFactRelated extends FactRelated {
+	
+	List<ParamType> metaDataParamList ; 
+	
     public PatientFactRelated(OutputOptionType outputOptionType) {
         super(outputOptionType);
     }
+    
+    public void setMetaDataParamList(List<ParamType> metaDataParamList) { 
+		this.metaDataParamList = metaDataParamList; 
+	}
+    
+    
+    private String buildCustomSelectClause(String prefix) {
+    	String detailSelectClause = " ";
+    	for (Iterator<ParamType> iterator = this.metaDataParamList.iterator();iterator.hasNext();) { 
+    		ParamType paramType = iterator.next();
+    		detailSelectClause += prefix + "." + paramType.getColumn() + "  " + prefix + "_" + paramType.getColumn();
+    		if (iterator.hasNext()) { 
+    			detailSelectClause += " , ";
+    		}
+    	}
+    	return detailSelectClause;
+    }
+    
 
     public String getSelectClause() {
         String selectClause = "";
@@ -33,7 +56,8 @@ public class PatientFactRelated extends FactRelated {
             selectClause = "  patient.patient_num patient_patient_num";
 
             if (isSelectDetail()) {
-                selectClause += " ,patient.vital_status_cd patient_vital_status_cd, patient.birth_date patient_birth_date, patient.death_date patient_death_date, patient.sex_cd patient_sex_cd, patient.age_in_years_num patient_age_in_years_num, patient.language_cd patient_language_cd, patient.race_cd patient_race_cd, patient.marital_status_cd patient_marital_status_cd, patient.religion_cd patient_religion_cd, patient.zip_cd patient_zip_cd, patient.statecityzip_path patient_statecityzip_path";
+            	selectClause += ", patient.Vital_Status_Cd  patient_Vital_Status_Cd, patient.birth_date patient_birth_date";
+                selectClause += "," +  buildCustomSelectClause("patient");
             }
 
             if (isSelectBlob()) {
@@ -48,6 +72,7 @@ public class PatientFactRelated extends FactRelated {
         return selectClause;
     }
 
+    
     public String joinClause() {
         if (isSelected()) {
             return " left join PATIENT_DIMENSION patient on (obs.patient_num = patient.patient_num) ";

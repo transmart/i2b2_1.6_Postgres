@@ -54,25 +54,15 @@ public class PidDAO extends CRCLoaderDAO implements IPidDAO {
 	public void createTempTable(String tempPatientMappingTableName)
 			throws I2B2Exception {
 		Connection conn = null;
-		try {			
-			// smuniraju: Postgres requires only IN arguments to be specified in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call "
-			// 		+ getDbSchemaName() + "CREATE_TEMP_PID_TABLE(?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + getDbSchemaName() + "CREATE_TEMP_PID_TABLE(?)}";
-			} else {
-				prepareCallString = "{call " + getDbSchemaName() + "CREATE_TEMP_PID_TABLE(?, ?)}";
-			}
-			
+		try {
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);			
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ getDbSchemaName() + "CREATE_TEMP_PID_TABLE(?,?)}");
 			callStmt.setString(1, tempPatientMappingTableName);
 			callStmt.registerOutParameter(2, java.sql.Types.VARCHAR);
 			callStmt.execute();
 			this.getSQLServerProcedureError(dataSourceLookup.getServerType(),
 					callStmt, 2);
-			
 		} catch (SQLException sqlEx) {
 			sqlEx.printStackTrace();
 			throw new I2B2Exception(
@@ -116,18 +106,10 @@ public class PidDAO extends CRCLoaderDAO implements IPidDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// Smuniraju: Postgres requires only IN arguments to be specified in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call "
-			// 		+ this.getDbSchemaName()
-			// 		+ "INSERT_PID_MAP_FROMTEMP(?,?,?)}");			
-			String prepareCallString = "";  
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_PID_MAP_FROMTEMP(?,?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_PID_MAP_FROMTEMP(?,?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "INSERT_PID_MAP_FROMTEMP(?,?,?)}");
 			callStmt.setString(1, tempMapTableName);
 			callStmt.setInt(2, uploadId);
 			callStmt.registerOutParameter(3, java.sql.Types.VARCHAR);

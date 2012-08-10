@@ -142,7 +142,7 @@ public class MessageFactory {
 
 		ApplicationType appType = new ApplicationType();
 		appType.setApplicationName("Ontology Cell");
-		appType.setApplicationVersion("1.6");
+		appType.setApplicationVersion("1.601");
 		messageHeader.setSendingApplication(appType);
 
 		FacilityType facility = new FacilityType();

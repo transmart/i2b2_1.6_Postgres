@@ -71,58 +71,8 @@ public class StringUtil {
     	fullPath = fullPath.substring(end).trim();
     	
     	return fullPath;
-    	    	
+    	
+    	
     }
     
-    // smuniraju: Used with strings that already have '\' escaped once through 
-	// functions like getLiteralPath()  
-    public static String escapeBackslash(String input, String serverType) {		
-		String output = null;
-		
-		if(input == null) return output;
-		
-		if (serverType.equals("POSTGRES")) {
-			
-			//Postgres treats backslash as an escape character in search expressions
-			//escape the escape characters.
-			output = input.replaceAll("\\\\", "\\\\\\\\"); 	
-		} else {
-			output = input ; 
-		}
-		
-		return output;		
-	}
-    
-    // smuniraju: Postgres requires escaping a '\' twice while performing a search
-	public static String doubleEscapeBackslash(String input, String serverType) {		
-		String output = null;
-		
-		if(input == null) return output;
-		
-		if (serverType.equals("POSTGRES")) {
-			
-			//Postgres treats backslash as an escape character in search expressions
-			//escape the escape characters.
-			output = input.replaceAll("\\\\", "\\\\\\\\\\\\\\\\");  			
-		} else {
-			output = input ; 
-		}
-		
-		return output;		
-	}
-	
-	/**
-	 * 
-	 * Use this function to escape single quote string
-	 * For example: Hi' Hello --> Hi'' Hello
-	 * @param value string 
-	 * @return single quote escaped string
-	 */
-	public static String escapeSingleQuote(String value) { 
-		String escapedValue = null;
-		if (value != null) { 
-			escapedValue = value.replaceAll("'", "\\''");
-		}
-		return escapedValue;
-	}
 }

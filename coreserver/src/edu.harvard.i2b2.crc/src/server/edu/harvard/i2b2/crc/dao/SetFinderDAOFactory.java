@@ -1,5 +1,7 @@
 package edu.harvard.i2b2.crc.dao;
 
+import javax.sql.DataSource;
+
 import edu.harvard.i2b2.crc.dao.role.IPriviledgeDao;
 import edu.harvard.i2b2.crc.dao.setfinder.IAnalysisPluginDao;
 import edu.harvard.i2b2.crc.dao.setfinder.IEncounterSetCollectionDao;
@@ -45,4 +47,6 @@ public interface SetFinderDAOFactory {
 	public DataSourceLookup getDataSourceLookup();
 
 	public DataSourceLookup getOriginalDataSourceLookup();
+	
+	public DataSource getDataSource();
 }

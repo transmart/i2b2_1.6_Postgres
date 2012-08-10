@@ -9,6 +9,7 @@
  */
 package edu.harvard.i2b2.fr.delegate;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import edu.harvard.i2b2.common.exception.I2B2Exception;
@@ -151,16 +152,16 @@ public class LoaderQueryRequestDelegate extends RequestHandlerDelegate {
             	log.debug("Number of roles:" + projectType.getRole().size());
             	
 				if (projectType != null && projectType.getRole().size() > 0) {
-					for (String a : projectType.getRole())
-						log.debug("Roles:" + a);
+					//for (String a : projectType.getRole())
+					//	log.debug("Roles:" + a);
 	            	
-					if ((!projectType.getRole().contains("ADMIN"))
-							&& (!projectType.getRole().contains("MANAGER"))) {
+					if (isRoleValid(projectType) == false) {
+						//!projectType.getRole().contains("MANAGER")  && !projectType.getRole().contains("EDITOR")) {
 						// Not authorized
 						procStatus = new StatusType();
 						procStatus.setType("ERROR");
 						procStatus
-								.setValue("Authorization failure, should have ADMIN or MANAGER role");
+								.setValue("Authorization failure, need MANAGER or EDITOR role");
 						response = I2B2MessageResponseFactory
 								.buildResponseMessage(requestXml, procStatus,
 										bodyType);
@@ -171,7 +172,7 @@ public class LoaderQueryRequestDelegate extends RequestHandlerDelegate {
 					procStatus = new StatusType();
 					procStatus.setType("ERROR");
 					procStatus
-							.setValue("Authorization failure, should have Admin role");
+							.setValue("Authorization failure, need MANAGER or EDITOR role");
 					response = I2B2MessageResponseFactory.buildResponseMessage(
 							requestXml, procStatus, bodyType);
 					return response;
@@ -242,4 +243,17 @@ public class LoaderQueryRequestDelegate extends RequestHandlerDelegate {
         return response;
     }
 
+    public boolean isRoleValid(ProjectType projectInfo){
+    	 
+ 	   ArrayList<String> roles = (ArrayList<String>) projectInfo.getRole();
+ 	   for(String param :roles) {
+ 		   if(param.equalsIgnoreCase("manager")) 
+ 			   return true;
+ 		   if(param.equalsIgnoreCase("editor")) 
+ 			   return true;
+ 	   }
+ 	   return false;
+    }
+    
+    
 }

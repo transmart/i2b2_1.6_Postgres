@@ -4,12 +4,15 @@ import java.util.List;
 
 import edu.harvard.i2b2.common.exception.I2B2DAOException;
 import edu.harvard.i2b2.crc.dao.pdo.input.IInputOptionListHandler;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientSet;
 import edu.harvard.i2b2.crc.datavo.pdo.query.EventListType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.PatientListType;
 
 public interface IPdoQueryPatientDao {
 
+	public void setMetaDataParamList(List<ParamType> metaDataParamList);
+	
 	/**
 	 * Get Patient set based on the fact's filter
 	 * 

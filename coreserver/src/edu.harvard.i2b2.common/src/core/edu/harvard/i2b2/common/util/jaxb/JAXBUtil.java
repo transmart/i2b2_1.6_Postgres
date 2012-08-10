@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.io.Writer;
+import java.util.ArrayList;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -100,47 +101,76 @@ public class JAXBUtil {
         }
     }
     
+    public void marshallerWithCDATA(Object element, Writer strWriter, String[] cdataElements)
+    	       throws JAXBUtilException {
+    	try {
+          	
+            JAXBContext jaxbContext = getJAXBContext();
+            Marshaller marshaller = jaxbContext.createMarshaller();
+            marshaller.setProperty("com.sun.xml.bind.xmlDeclaration",Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT,
+                Boolean.TRUE);
+            
+            marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper",
+                new NamespacePrefixMapperImpl());
+            
+           
+            // get an Apache XMLSerializer configured to generate CDATA
+             XMLSerializer serializer = getXMLSerializer(strWriter,cdataElements);
+            
+            // marshal using the Apache XMLSerializer
+            marshaller.marshal(element,
+            serializer.asContentHandler());
+           
+            //marshaller.marshal(element, strWriter);
+        } catch (Exception jaxbEx) {
+            jaxbEx.printStackTrace();
+            throw new JAXBUtilException("Error during marshalling ", jaxbEx);
+        }
+
+    }
+    
+   
+  
    /**
-    *
-    * @param requestMessageType
-    * @param strWriter
-    * @param splCharFilterFlag
-    * @throws JAXBUtilException
-    */
-   public void marshaller(Object element, Writer strWriter, boolean splCharFilterFlag)
-       throws JAXBUtilException {
+   *
+   * @param requestMessageType
+   * @param strWriter
+   * @param splCharFilterFlag
+   * @throws JAXBUtilException
+   */
+  public void marshaller(Object element, Writer strWriter, boolean splCharFilterFlag)
+      throws JAXBUtilException {
 	   try {
-       	
-           JAXBContext jaxbContext = getJAXBContext();
-           Marshaller marshaller = jaxbContext.createMarshaller();
-           marshaller.setProperty("com.sun.xml.bind.xmlDeclaration",Boolean.TRUE);
-           marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT,
-               Boolean.TRUE);
-           marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper",
-               new NamespacePrefixMapperImpl());
-           
-           
-           //character escape
-           if (splCharFilterFlag) { 
+      	
+          JAXBContext jaxbContext = getJAXBContext();
+          Marshaller marshaller = jaxbContext.createMarshaller();
+          marshaller.setProperty("com.sun.xml.bind.xmlDeclaration",Boolean.TRUE);
+          marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT,
+              Boolean.TRUE);
+          
+          marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper",
+              new NamespacePrefixMapperImpl());
+          
+          
+          //character escape
+          if (splCharFilterFlag) { 
 	           marshaller.setProperty( "jaxb.encoding", "UTF-8" );
 	           marshaller.setProperty(
 	                   "com.sun.xml.bind.characterEscapeHandler",
 	                   new XmlCharacterEscapeHandler() );
-           }
+          }
 
-           // get an Apache XMLSerializer configured to generate CDATA
-           // XMLSerializer serializer = getXMLSerializer(strWriter);
+          
+         
+          marshaller.marshal(element, strWriter);
+      } catch (Exception jaxbEx) {
+          jaxbEx.printStackTrace();
+          throw new JAXBUtilException("Error during marshalling ", jaxbEx);
+      }
 
-           // marshal using the Apache XMLSerializer
-           //marshaller.marshal(element,
-           // serializer.asContentHandler());
-           marshaller.marshal(element, strWriter);
-       } catch (JAXBException jaxbEx) {
-           jaxbEx.printStackTrace();
-           throw new JAXBUtilException("Error during marshalling ", jaxbEx);
-       }
-
-   }
+  }
+   
     /**
      *
      * @param requestMessageType
@@ -152,6 +182,8 @@ public class JAXBUtil {
     	marshaller(element, strWriter,false);
     }
 
+    
+    
     public JAXBElement unMashallFromString(String xmlString)
         throws JAXBUtilException {
         if (xmlString == null) {
@@ -257,7 +289,7 @@ public class JAXBUtil {
     
     
 
-    private static XMLSerializer getXMLSerializer(Writer strWriter) {
+    private  XMLSerializer getXMLSerializer(Writer strWriter, String[] cdataElements) {
         // configure an OutputFormat to handle CDATA
         OutputFormat of = new OutputFormat();
 
@@ -266,16 +298,19 @@ public class JAXBUtil {
         // seems to be an implementation detail of the xerces code.
         // When processing xml that doesn't use namespaces, simply omit the
         // namespace prefix as shown in the third CDataElement below.
-        of.setCDataElements(new String[] {
-                "ns3^request_xml", // <ns1:foo>
-            "ns2^request_xml", // <ns2:bar>
-            "^request_xml"
-            }); // <baz>
+        ArrayList<String> elementNameList = new ArrayList<String>();
+        int i=0;
+        while (i<cdataElements.length) { 
+        	elementNameList.add("^" +cdataElements[i] );
+        	i++;
+        }
+        of.setCDataElements(elementNameList.toArray(new String[]{})); // <baz>
 
         // set any other options you'd like
         of.setPreserveSpace(true);
         of.setIndenting(true);
         of.setIndent(4);
+        of.setLineSeparator(System.getProperty("line.separator"));
 
         // create the serializer
         XMLSerializer serializer = new XMLSerializer(of);

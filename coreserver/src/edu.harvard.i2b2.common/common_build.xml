@@ -26,7 +26,7 @@
 	
     
     <!-- OTHER SETTINGS -->
-	<property name="javac.debug" value="false" />
+	<property name="javac.debug" value="off" />
 	<property name="javac.opt" value="true" />
     <property name="jboss.version" value="4.0" />
     <property name="ejbspec" value="2.0" />

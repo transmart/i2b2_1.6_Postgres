@@ -35,6 +35,7 @@ public class DateConstrainUtil {
 		String dateConstrainSql = null;
 		String fullItemDateSql = "";
 		List<ConstrainByDate> constrainByDateList = item.getConstrainByDate();
+		boolean firstFlag = true;
 		for (ConstrainByDate constrainByDate : constrainByDateList) {
 			ConstrainDateType dateFrom = constrainByDate.getDateFrom();
 			ConstrainDateType dateTo = constrainByDate.getDateTo();
@@ -76,7 +77,14 @@ public class DateConstrainUtil {
 						.constructDateConstrainClause(dateFromColumn,
 								dateToColumn, dateFromInclusive,
 								dateToInclusive, dateFromValue, dateToValue);
+				
 				if (dateConstrainSql != null) {
+					if (!firstFlag) { 
+						fullItemDateSql += " AND ";
+					} else { 
+						firstFlag = false;
+					}
+					
 					fullItemDateSql += "  " + dateConstrainSql + "\n";
 				}
 

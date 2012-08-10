@@ -57,7 +57,7 @@ abstract public class ProjectManagementRequestData {
 		
 		ApplicationType appType = new ApplicationType();
 		appType.setApplicationName("i2b2 CRC Cell");
-		appType.setApplicationVersion("1.1"); 
+		appType.setApplicationVersion("1.601"); 
 		messageHeader.setSendingApplication(appType);
 		
 		FacilityType facility = new FacilityType();
@@ -65,7 +65,7 @@ abstract public class ProjectManagementRequestData {
 		messageHeader.setSendingFacility(facility);
 		
 		ApplicationType appType2 = new ApplicationType();
-		appType2.setApplicationVersion("1.1");
+		appType2.setApplicationVersion("1.601");
 		appType2.setApplicationName("Project Management Cell");		
 		messageHeader.setReceivingApplication(appType2);
 	

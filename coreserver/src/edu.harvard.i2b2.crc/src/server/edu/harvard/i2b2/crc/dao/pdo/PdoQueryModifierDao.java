@@ -128,26 +128,6 @@ public class PdoQueryModifierDao extends CRCDAO implements IPdoQueryModifierDao 
 
 				query = conn.prepareStatement(finalSql);
 
-			} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				log.debug("creating temp table");
-				java.sql.Statement tempStmt = conn.createStatement();
-				tempTableName = FactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE;
-				try {
-					tempStmt.executeUpdate("drop table if exists " + tempTableName);
-				} catch (SQLException sqlex) {
-					;
-				}
-
-				uploadTempTable(tempStmt, tempTableName, modifierCdList);
-				String finalSql = "SELECT "
-						+ selectClause
-						+ " FROM "
-						+ getDbSchemaName()
-						+ "modifier_dimension modifier WHERE modifier.modifier_cd IN (select distinct char_param1 FROM "
-						+ tempTableName + ") order by modifier_path";
-				log.debug("Executing [" + finalSql + "]");
-
-				query = conn.prepareStatement(finalSql);
 			}
 			ResultSet resultSet = query.executeQuery();
 
@@ -184,20 +164,8 @@ public class PdoQueryModifierDao extends CRCDAO implements IPdoQueryModifierDao 
 
 	private void uploadTempTable(Statement tempStmt, String tempTable,
 			List<String> patientNumList) throws SQLException {
-		
-		// smuniraju: Extended to include POSTGRES 
-		String serverType = dataSourceLookup.getServerType();
-		String createTempInputListTable = "";
-		if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-			createTempInputListTable = "create temporary table " + tempTable
-					+ " ( char_param1 varchar(100) )";
-		} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) {
-			createTempInputListTable = "create table " + tempTable
-					+ " ( char_param1 varchar(100) )";
-		}
-		// smuniraju: Extended to include POSTGRES 
-		// String createTempInputListTable = "create table " + tempTable
-		//		+ " ( char_param1 varchar(100) )";
+		String createTempInputListTable = "create table " + tempTable
+				+ " ( char_param1 varchar(100) )";
 		tempStmt.executeUpdate(createTempInputListTable);
 		log.debug("created temp table" + tempTable);
 		PreparedStatement preparedStmt = tempStmt.getConnection()
@@ -251,19 +219,6 @@ public class PdoQueryModifierDao extends CRCDAO implements IPdoQueryModifierDao 
 					;
 				}
 				String createTempInputListTable = "create table " + tempTable
-						+ " ( set_index int, char_param1 varchar(500) )";
-				tempStmt.executeUpdate(createTempInputListTable);
-				log.debug("created temp table" + tempTable);
-			} else if (serverType.equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				log.debug("creating temp table");
-				java.sql.Statement tempStmt = conn.createStatement();
-				tempTable = FactRelatedQueryHandler.TEMP_FACT_PARAM_TABLE;
-				try {
-					tempStmt.executeUpdate("drop table if exists " + tempTable);
-				} catch (SQLException sqlex) {
-					;
-				}
-				String createTempInputListTable = "create temporary table " + tempTable
 						+ " ( set_index int, char_param1 varchar(500) )";
 				tempStmt.executeUpdate(createTempInputListTable);
 				log.debug("created temp table" + tempTable);

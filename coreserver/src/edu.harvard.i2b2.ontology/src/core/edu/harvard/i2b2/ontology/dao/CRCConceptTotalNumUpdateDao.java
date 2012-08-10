@@ -31,7 +31,6 @@ import edu.harvard.i2b2.ontology.delegate.crc.CallCRCUtil;
 import edu.harvard.i2b2.ontology.ejb.DBInfoType;
 import edu.harvard.i2b2.ontology.ejb.TableAccessType;
 import edu.harvard.i2b2.ontology.util.OntologyUtil;
-import edu.harvard.i2b2.ontology.util.StringUtil;
 
 public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 
@@ -106,7 +105,7 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 				log.debug("Executing sql [" + updateStmtStr + "] c_fullname [" + tableAccessType.getFullName() + " ]");
 				if (synchronizeAllFlag) {
 					pStmt = conn.prepareStatement(updateStmtStr);
-					pStmt.setString(1, StringUtil.escapeBackslash(tableAccessType.getFullName(), dbInfo.getDb_serverType()) + "%");
+					pStmt.setString(1, tableAccessType.getFullName() + "%");
 					pStmt.executeUpdate();
 					pStmt.close();
 				}
@@ -119,7 +118,7 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 				}
 				
 				pStmt = conn.prepareStatement(selectStmt);
-				pStmt.setString(1, StringUtil.escapeBackslash(tableAccessType.getFullName(), dbInfo.getDb_serverType()) + "%");
+				pStmt.setString(1, tableAccessType.getFullName() + "%");
 				 resultSet = pStmt.executeQuery();
 				 resultSet.next();
 				 totalRecordToUpdate += resultSet.getInt(1);
@@ -136,14 +135,15 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 			
 			for (Iterator<TableAccessType> tableAccess = tableAccessTypeList.iterator(); tableAccess.hasNext();) { 
 				tableAccessType = tableAccess.next();
-				String selectStmt = "select * from " + metadataSchema + tableAccessType.getTableName().trim() + " where c_fullname like ? ";
+				String selectStmt = "select * from " + metadataSchema + tableAccessType.getTableName().trim() + " where c_fullname like ? and c_visualattributes not like 'C%' and c_visualattributes not like 'O%' " +
+						" and c_visualattributes not like 'D%' and c_visualattributes not like 'R%' ";
 				if (synchronizeAllFlag == false) {
 					selectStmt += " and c_totalnum is null ";
 				}
 				selectStmt += " order by c_fullname";
 				pStmt = conn.prepareStatement(selectStmt);
-				pStmt.setString(1, StringUtil.escapeBackslash(tableAccessType.getFullName(), dbInfo.getDb_serverType()) + "%");
-				resultSet = pStmt.executeQuery();
+				pStmt.setString(1, tableAccessType.getFullName() + "%");
+				 resultSet = pStmt.executeQuery();
 				 
 				 updatePStmt = conn.prepareStatement("update "+ metadataSchema + tableAccessType.getTableName().trim() +" set c_totalnum = ? where c_fullname = ? ");
 					CallCRCUtil crcUtil = new CallCRCUtil(
@@ -164,7 +164,7 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 					// call frc
 					log.debug("Begin Setfinder query to CRC [" + cFullName + "]");
 					conceptSkipFlag = false;
-					try { 						
+					try { 
 						masterInstanceResultResponse = crcUtil.callSetfinderQuery("\\\\" + tableAccessType.getTableCd().trim() + cFullName);
 					} catch (Throwable  i2b2Ex) { 
 						log.info("Patient count caught the exception " + i2b2Ex.getMessage());
@@ -187,7 +187,8 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 						//update total_num column
 						updatePStmt.setInt(1,totalNum);
 						updatePStmt.setString(2,cFullName);
-						updatePStmt.executeUpdate();						
+						updatePStmt.executeUpdate();
+						
 					}
 				    
 				    //delete the setfinder query

@@ -46,17 +46,10 @@ public class ConceptDAO extends CRCLoaderDAO implements IConceptDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be supplied in call to a proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + this.getDbSchemaName() + "CREATE_TEMP_CONCEPT_TABLE(?,?)}");
-			
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "CREATE_TEMP_CONCEPT_TABLE(?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "CREATE_TEMP_CONCEPT_TABLE(?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "CREATE_TEMP_CONCEPT_TABLE(?,?)}");
 			callStmt.setString(1, tempPatientMappingTableName);
 			callStmt.registerOutParameter(2, java.sql.Types.VARCHAR);
 			callStmt.execute();
@@ -105,16 +98,10 @@ public class ConceptDAO extends CRCLoaderDAO implements IConceptDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be supplied in a call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + this.getDbSchemaName() + "INSERT_CONCEPT_FROMTEMP(?,?,?)}");			
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_CONCEPT_FROMTEMP(?,?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_CONCEPT_FROMTEMP(?,?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "INSERT_CONCEPT_FROMTEMP(?,?,?)}");
 			callStmt.setString(1, tempMapTableName);
 			callStmt.setInt(2, uploadId);
 			callStmt.registerOutParameter(3, java.sql.Types.VARCHAR);
@@ -160,16 +147,10 @@ public class ConceptDAO extends CRCLoaderDAO implements IConceptDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be supplied in a call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + this.getDbSchemaName() + "SYNC_CLEAR_CONCEPT_TABLE(?,?,?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "SYNC_CLEAR_CONCEPT_TABLE(?,?,?,?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "SYNC_CLEAR_CONCEPT_TABLE(?,?,?,?)}";
-			}
 			conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "SYNC_CLEAR_CONCEPT_TABLE(?,?,?,?)}");
 			callStmt.setString(1, tempConceptTableName);
 			callStmt.setString(2, backupConceptDimensionTableName);
 			callStmt.setInt(3, uploadId);

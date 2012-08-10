@@ -2,6 +2,10 @@ package edu.harvard.i2b2.common.util.db;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -26,6 +30,26 @@ public class JDBCUtil {
 				strBuff.append(singleLine);
 			}
 		return strBuff.toString();
+	}
+	
+	/**
+	 * Function to convert clob to string
+	 * @param clob
+	 * @return
+	 * @throws SQLException
+	 * @throws IOException
+	 */
+	public static String  getClobStringWithLinebreak(Clob clob) throws SQLException, IOException { 
+		Reader read = new InputStreamReader(clob.getAsciiStream());
+		StringWriter write = new StringWriter();
+
+		int c = -1;
+		while ((c = read.read()) != -1)
+		{
+			write.write(c);
+		}
+		write.flush();
+		return write.toString();
 	}
 	
 	/**

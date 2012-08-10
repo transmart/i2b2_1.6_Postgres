@@ -92,12 +92,16 @@ public class SortPanel {
 			CallOntologyUtil ontologyUtil) throws I2B2DAOException {
 
 		Map<Integer, Integer> panelTotalMap = new HashMap<Integer, Integer>();
+		Map<Integer, Integer> invertPanelTotalMap = new HashMap<Integer, Integer>();
 		Map<Integer, PanelType> panelMap = new HashMap<Integer, PanelType>();
-		int panelIndex = 0;
+		Map<Integer, PanelType> invertPanelMap = new HashMap<Integer, PanelType>();
+		int panelIndex = 0, invertPanelIndex = 0;
 		List<PanelType> sortedPanelArray = new ArrayList<PanelType>();
+		List<PanelType> sortedInvertPanelArray = new ArrayList<PanelType>();
 		for (PanelType panelType : panelList) {
-			panelIndex++;
+			
 			List<ItemType> itemList = panelType.getItem();
+			int invert = panelType.getInvert();
 			// calculate the total for each item
 			int panelTotal = 0;
 			String itemKey = null;
@@ -137,23 +141,32 @@ public class SortPanel {
 				}
 
 			}
-			panelMap.put(panelIndex, panelType);
-			panelTotalMap.put(panelIndex, panelTotal);
+			
+			
+			
+			if (invert == 1) { 
+				invertPanelIndex++;
+				invertPanelTotalMap.put(invertPanelIndex, panelTotal*-1);
+				invertPanelMap.put(invertPanelIndex, panelType);
+				//panelTotalMap.put(panelIndex, panelTotal);
+			} else {
+				panelIndex++;
+				panelTotalMap.put(panelIndex, panelTotal);
+				panelMap.put(panelIndex, panelType);
+			}
+			
 			log.debug("Panel's Total num [" + panelTotal
 					+ "] and the panel index [" + panelIndex + "]");
 
 		}
 
+		
 		HashMap yourMap = new HashMap();
-
 		HashMap map = new LinkedHashMap();
-
 		List yourMapKeys = new ArrayList(panelTotalMap.keySet());
 		List yourMapValues = new ArrayList(panelTotalMap.values());
 		List sortedMapValues = new ArrayList(yourMapValues);
-
 		Collections.sort(sortedMapValues);
-
 		int size = yourMapValues.size();
 		int indexInMapValues = 0;
 		for (int i = 0; i < size; i++) {
@@ -166,9 +179,37 @@ public class SortPanel {
 		int panelIndexHash = 0;
 		while (it.hasNext()) {
 			panelIndexHash = (Integer) it.next();
-
 			sortedPanelArray.add(panelMap.get(panelIndexHash));
 		}
+		log.debug("size of sorted panel array [" + sortedPanelArray.size() + "]");
+		
+		HashMap yourInvertMap = new HashMap();
+		HashMap invertMap = new LinkedHashMap();
+		List yourInvertMapKeys = new ArrayList(invertPanelTotalMap.keySet());
+		List yourInvertMapValues = new ArrayList(invertPanelTotalMap.values());
+		List sortedInvertMapValues = new ArrayList(yourInvertMapValues);
+		Collections.sort(sortedInvertMapValues);
+		
+		 size = yourInvertMapValues.size();
+		 indexInMapValues = 0;
+		for (int i = 0; i < size; i++) {
+			indexInMapValues = yourInvertMapValues.indexOf(sortedInvertMapValues.get(i));
+			invertMap.put(yourInvertMapKeys.get(indexInMapValues), sortedInvertMapValues.get(i));
+			yourInvertMapValues.set(indexInMapValues, -1);
+		}
+		Set ref1 = invertMap.keySet();
+		Iterator it1 = ref1.iterator();
+		panelIndexHash = 0;
+		while (it1.hasNext()) {
+			panelIndexHash = (Integer) it1.next();
+			sortedInvertPanelArray.add(invertPanelMap.get(panelIndexHash));
+		}
+		
+		log.debug("size of sorted exclude panel array [" + sortedInvertPanelArray.size() + "]");
+		
+		sortedPanelArray.addAll(sortedInvertPanelArray);
+		
+		
 		return sortedPanelArray;
 
 	}

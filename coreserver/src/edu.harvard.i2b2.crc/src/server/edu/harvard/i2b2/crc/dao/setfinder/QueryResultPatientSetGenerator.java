@@ -1,5 +1,6 @@
 package edu.harvard.i2b2.crc.dao.setfinder;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -37,6 +38,7 @@ public class QueryResultPatientSetGenerator extends CRCDAO implements
 		DataSourceLookup originalDataSource = (DataSourceLookup) param
 				.get("OriginalDataSourceLookup");
 		List<String> roles = (List<String>) param.get("Roles");
+		this.setDbSchemaName(sfDAOFactory.getDataSourceLookup().getFullSchema()); 
 
 		boolean errorFlag = false;
 		Exception exception = null;
@@ -50,57 +52,37 @@ public class QueryResultPatientSetGenerator extends CRCDAO implements
 					.getPatientSetCollectionDAO();
 			patientSetCollectionDao
 					.createPatientSetCollection(resultInstanceId);
+
+			String patientIdSql = " select distinct patient_num from " + TEMP_DX_TABLE
+					+ " order by patient_num ";
 			
-			String patientIdSql = "";			
-			LogTimingUtil logTimingUtil = new LogTimingUtil();
-			
-			// smuniraju: Separate block for Postgres to improve performance of INSERT queries.
-			if(sfDAOFactory.getDataSourceLookup().getServerType().equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
-				String schemaName = sfDAOFactory.getDataSourceLookup().getFullSchema();		
-				schemaName = (schemaName == null || schemaName.trim().equals("")) ? "" : getDbSchemaName() + ".";
-				
-				// Used to increment values for set_index
-				java.sql.Statement sqlStmt = sfConn.createStatement();										
-				sqlStmt.execute("CREATE TEMP SEQUENCE " + schemaName + "temp_seq_patient_set_index START WITH 1");
-				sqlStmt.close();
-				
-				// Append resultInstanceId and nextVal(seq_qt_enc_col_set_index) to SELECT query obtained from buildEncounterSql				
-				patientIdSql =  "SELECT DISTINCT patient_num, " + resultInstanceId + ", NEXTVAL('" + schemaName + "temp_seq_patient_set_index') " 
-				             +  "FROM " + TEMP_DX_TABLE + " ORDER BY patient_num";								  
-				String insertSql = "INSERT INTO " + schemaName + "qt_patient_set_collection(patient_num, result_instance_id, set_index)" 
-								 + patientIdSql;			
-				
-				sqlStmt = sfConn.createStatement();
-				logTimingUtil.setStartTime();
-				loadCount = sqlStmt.executeUpdate(insertSql);
-				logTimingUtil.setEndTime();
-				sqlStmt.close();
-				
-			} else {
-				patientIdSql = " select distinct patient_num from " + TEMP_DX_TABLE
-                             + " order by patient_num ";
-				Statement readQueryStmt = sfConn.createStatement();
-				logTimingUtil.setStartTime();
-				ResultSet resultSet = readQueryStmt.executeQuery(patientIdSql);
-				while (resultSet.next()) {
-					long patientNum = resultSet.getLong("patient_num");
-					patientSetCollectionDao.addPatient(patientNum);
-					i++;
-					loadCount++;
-	
-					if ((i % 500) == 0) {
-						log.debug("Loading [" + loadCount + "] patients"
-								+ " for query instanse = " + queryInstanceId);
-					}
-				}
-				readQueryStmt.close();
-				patientSetCollectionDao.flush();
-				logTimingUtil.setEndTime();
+			////
+			//JNix: refactored to no longer pull down records just to insert back.
+			String sql = null;
+			String dbSchemaName = this.getDbSchemaName();
+			if (sfDAOFactory.getDataSourceLookup().getServerType().equals(DAOFactoryHelper.ORACLE)) {
+				sql = "INSERT INTO " + dbSchemaName + "qt_patient_set_collection"
+						+ " (patient_set_coll_id, result_instance_id, set_index, patient_num) "
+						+ "SELECT " + dbSchemaName + "QT_SQ_QPR_PCID.nextval AS patient_set_coll_id, ? AS result_instance_id, rownum AS set_index, t.patient_num "
+						+ "FROM (SELECT DISTINCT patient_num FROM " + TEMP_DX_TABLE + ") t";
+			} else if (sfDAOFactory.getDataSourceLookup().getServerType().equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) {
+				sql = "INSERT INTO " + dbSchemaName + "qt_patient_set_collection"
+						+ " (result_instance_id, set_index, patient_num) "
+						+ "SELECT ? AS result_instance_id, ROW_NUMBER() OVER(ORDER BY patient_num) AS set_index, t.patient_num "
+						+ "FROM (SELECT DISTINCT patient_num FROM " + TEMP_DX_TABLE + ") t";
 			}
-			
+			log.debug("Executing sql:\n" + sql);
+
+			LogTimingUtil logTimingUtil = new LogTimingUtil();
+			logTimingUtil.setStartTime();
+			PreparedStatement ps = sfConn.prepareStatement(sql);
+			ps.setInt(1, Integer.parseInt(resultInstanceId));
+			loadCount = ps.executeUpdate();
+			ps.close();
+			logTimingUtil.setEndTime();
 			log.debug("Total patients loaded for query instance ="
 					+ queryInstanceId + " is [" + loadCount + "]");
-			
+			////
 			if (processTimingFlag != null) {
 				if (!processTimingFlag.trim().equalsIgnoreCase(ProcessTimingReportUtil.NONE) ) {
 					ProcessTimingReportUtil ptrUtil = new ProcessTimingReportUtil(sfDAOFactory.getDataSourceLookup());
@@ -108,35 +90,7 @@ public class QueryResultPatientSetGenerator extends CRCDAO implements
 				}
 			}
 			realCount = loadCount;
-			/*
-			 * DataSourceLookup dataSourceLookup = sfDAOFactory
-			 * .getDataSourceLookup();
-			 * this.setDbSchemaName(dataSourceLookup.getFullSchema()); String
-			 * insertSql = "", generateRowNumSql = "";
-			 * 
-			 * if (dataSourceLookup.getServerType().equalsIgnoreCase(
-			 * DAOFactoryHelper.ORACLE)) { insertSql = "insert into " +
-			 * getDbSchemaName() +
-			 * "qt_patient_set_collection(patient_set_coll_id,result_instance_id,set_index,patient_num) "
-			 * + "select  " + getDbSchemaName() + "QT_SQ_QPR_PCID.nextval," +
-			 * resultInstanceId + ",rownum,patient_num from " + TEMP_DX_TABLE +
-			 * " order by patient_num"; } else if
-			 * (dataSourceLookup.getServerType().equalsIgnoreCase(
-			 * DAOFactoryHelper.SQLSERVER)) { generateRowNumSql =
-			 * "select identity(int,1,1) rownumber,patient_num into #temp_dx from "
-			 * + TEMP_DX_TABLE + " order by patient_num"; insertSql =
-			 * "insert into " + getDbSchemaName() +
-			 * "qt_patient_set_collection(result_instance_id,set_index,patient_num) select "
-			 * + resultInstanceId + ", rownumber, patient_num from #temp_dx " +
-			 * " order by patient_num drop table #temp_dx"; } Statement
-			 * readQueryStmt = sfConn.createStatement(); if
-			 * (generateRowNumSql.length() > 0) { log.debug("Executing SQL [" +
-			 * generateRowNumSql + "]  for query instanse = " +
-			 * queryInstanceId); readQueryStmt.executeUpdate(generateRowNumSql);
-			 * } log.debug("Executing SQL [" + insertSql +
-			 * "]  for query instanse = " + queryInstanceId); loadCount =
-			 * readQueryStmt.executeUpdate(insertSql);
-			 */
+			
 
 			// check for the user role to see if it needs data obfscation
 			DataSourceLookup dataSourceLookup = sfDAOFactory
@@ -175,8 +129,11 @@ public class QueryResultPatientSetGenerator extends CRCDAO implements
 				obfuscationDescription = "~";
 				obfusMethod = IQueryResultInstanceDao.OBTOTAL;
 				GaussianBoxMuller gaussianBoxMuller = new GaussianBoxMuller();
+				//read count sigma from property file
+				double countSigma = GaussianBoxMuller.getCountSigma();
+				double obfuscatedMinimumValue = GaussianBoxMuller.getObfuscatedMinimumVal();
 				loadCount = (int) gaussianBoxMuller
-						.getNormalizedValueForCount(loadCount);
+						.getNormalizedValueForCount(loadCount,countSigma,obfuscatedMinimumValue);
 			} else { 
 				obfucatedRecordCount = loadCount;
 			}

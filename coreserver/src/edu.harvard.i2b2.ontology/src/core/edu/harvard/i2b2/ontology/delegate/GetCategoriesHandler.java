@@ -23,6 +23,7 @@ import edu.harvard.i2b2.ontology.datavo.i2b2message.MessageHeaderType;
 import edu.harvard.i2b2.ontology.datavo.i2b2message.ResponseMessageType;
 import edu.harvard.i2b2.ontology.datavo.vdo.ConceptType;
 import edu.harvard.i2b2.ontology.datavo.vdo.ConceptsType;
+import edu.harvard.i2b2.ontology.datavo.vdo.GetCategoriesType;
 import edu.harvard.i2b2.ontology.datavo.vdo.GetReturnType;
 import edu.harvard.i2b2.ontology.ws.GetCategoriesDataMessage;
 import edu.harvard.i2b2.ontology.ws.MessageFactory;
@@ -31,13 +32,13 @@ import edu.harvard.i2b2.ontology.datavo.pm.ProjectType;
 public class GetCategoriesHandler extends RequestHandler {
     private static Log log = LogFactory.getLog(GetCategoriesHandler.class);
 	private GetCategoriesDataMessage  getCategoriesMsg = null;
-	private GetReturnType getReturnType = null;
+	private GetCategoriesType getCategoriesType = null;
 	private ProjectType projectInfo = null;
 
 	public GetCategoriesHandler(GetCategoriesDataMessage requestMsg) throws I2B2Exception{
 		try {
 			getCategoriesMsg = requestMsg;
-			getReturnType = requestMsg.getReturnType();
+			getCategoriesType = requestMsg.getCatType();
 			projectInfo = getRoleInfo(getCategoriesMsg.getMessageHeaderType());	
 			// test sub project with owner = @
 		//	getCategoriesMsg.getMessageHeaderType().setProjectId("Demo/RA_demo/sub_demo/sub-sub/");
@@ -66,7 +67,7 @@ public class GetCategoriesHandler extends RequestHandler {
 		
 		List response = null;
 		try {
-			response = conceptDao.findRootCategories(getReturnType, projectInfo, this.getDbInfo());
+			response = conceptDao.findRootCategories(getCategoriesType, projectInfo, this.getDbInfo());
 		}catch (I2B2DAOException e1) {
 			responseMessageType = MessageFactory.doBuildErrorResponse(getCategoriesMsg.getMessageHeaderType(), "Database error");
 		} catch (I2B2Exception e1) {

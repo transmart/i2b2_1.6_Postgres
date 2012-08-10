@@ -42,6 +42,7 @@ import edu.harvard.i2b2.crc.datavo.pdo.ModifierSet;
 import edu.harvard.i2b2.crc.datavo.pdo.ModifierType;
 import edu.harvard.i2b2.crc.datavo.pdo.ObservationSet;
 import edu.harvard.i2b2.crc.datavo.pdo.ObserverSet;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientDataType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientSet;
 import edu.harvard.i2b2.crc.datavo.pdo.PidSet;
@@ -132,6 +133,8 @@ public class PdoQueryHandler {
 	
 	private Map projectParamMap = null;
 	private Map<String,XmlValueType> modifierMetadataXmlMap = null;
+	private String requestVersion = "";
+	private List<ParamType> patientMetaDataParamType = null, visitMetaDataParamType = null;
 
 
 	/**
@@ -192,6 +195,17 @@ public class PdoQueryHandler {
 	public void setModifierMetadataXmlMap(Map<String,XmlValueType> modifierMetadataXmlMap) { 
 		this.modifierMetadataXmlMap = modifierMetadataXmlMap;
 	}
+	
+	public void setRequestVersion(String requestVersion) { 
+		this.requestVersion = requestVersion;
+	}
+	
+	public void setDimensionMetaDataParamList(List<ParamType> patientMetaDataParamType, List<ParamType> visitMetaDataParamType) { 
+		this.patientMetaDataParamType = patientMetaDataParamType;
+		this.visitMetaDataParamType = visitMetaDataParamType;
+		
+	}
+	
 	
 	/**
 	 * Method to find if input list is patient set
@@ -304,8 +318,7 @@ public class PdoQueryHandler {
 			DataSourceLookup dataSourceLookup = pdoDaoFactory
 					.getDataSourceLookup();
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.ORACLE) || dataSourceLookup.getServerType().equalsIgnoreCase(
-							DAOFactoryHelper.POSTGRES)) {
+					DAOFactoryHelper.ORACLE)) {
 				factRelatedQry = new FactRelatedQueryHandler(pdoDaoFactory
 						.getDataSourceLookup(), inputList, filterList,
 						outputOptionList);
@@ -318,6 +331,10 @@ public class PdoQueryHandler {
 			//set project param map
 			factRelatedQry.setProjectParamMap(this.projectParamMap);
 			factRelatedQry.setModifierMetadataXmlMap(modifierMetadataXmlMap);
+			factRelatedQry.setRequestVersion(this.requestVersion);
+			
+			
+			
 			// execute query
 			if (pdoType.equalsIgnoreCase(TABLE_PDO_TYPE)) {
 				List<ObservationSet> tableObservationSet = factRelatedQry
@@ -380,7 +397,7 @@ public class PdoQueryHandler {
 		if (patientSelected) {
 			PatientSection ps = new PatientSection(pdoType, factRelatedQry,
 					patientFromFact, isGetPDOFromVisitSet(),
-					isGetPDOFromPatientSet());
+					isGetPDOFromPatientSet(),patientMetaDataParamType);
 			ps.generateSet();
 
 			if (pdoType.equalsIgnoreCase(TABLE_PDO_TYPE)) {
@@ -394,7 +411,7 @@ public class PdoQueryHandler {
 		if (visitSelected) {
 			VisitSection vs = new VisitSection(pdoType, factRelatedQry,
 					visitFromFact, isGetPDOFromVisitSet(),
-					isGetPDOFromPatientSet());
+					isGetPDOFromPatientSet(),visitMetaDataParamType);
 			vs.generateSet();
 
 			if (pdoType.equalsIgnoreCase(TABLE_PDO_TYPE)) {
@@ -785,23 +802,27 @@ public class PdoQueryHandler {
 		PatientSet patientDimensionSet = null;
 		PatientSet patientSet = null;
 		String pType = null;
+		List<ParamType> patientMetaDataType = null;
 
 		public PatientSection(String pType,
 				IFactRelatedQueryHandler factRelatedQry,
 				boolean patientFromFact, boolean fromVisitSet,
-				boolean fromPatientSet) {
+				boolean fromPatientSet, List<ParamType> patientMetaDataType) {
 			this.factRelatedQry = factRelatedQry;
 			this.patientFromFact = patientFromFact;
 			this.fromVisitSet = fromVisitSet;
 			this.fromPatientSet = fromPatientSet;
 			this.pType = pType;
+			this.patientMetaDataType  = patientMetaDataType;
 		}
 
 		public void generateSet() throws Exception {
 			IPdoQueryPatientDao pdoQueryPatientDao = pdoDaoFactory
 					.getPdoQueryPatientDAO();
+			pdoQueryPatientDao.setMetaDataParamList(this.patientMetaDataType); 
 			ITablePdoQueryPatientDao tablePdoQueryPatientDao = pdoDaoFactory
 					.getTablePdoQueryPatientDAO();
+			tablePdoQueryPatientDao.setMetaDataParamList(this.patientMetaDataType);
 
 			// check if patient dimension is in output option
 			boolean detailFlag = patientFactRelated.isSelectDetail();
@@ -815,7 +836,7 @@ public class PdoQueryHandler {
 			if (patientFromFact) {
 				List<String> patientFactList = factRelatedQry
 						.getPatientFactList();
-				System.out.println("Patient fact list size"
+				log.debug("Patient fact list size"
 						+ patientFactList.size());
 
 				List<String> panelSqlList = factRelatedQry.getPanelSqlList();
@@ -900,22 +921,27 @@ public class PdoQueryHandler {
 		EventSet visitDimensionSet = null;
 		EventSet eventSet = null;
 		String pType = null;
+		List<ParamType> visitMetaDataParamList = null;
 
 		public VisitSection(String pType,
 				IFactRelatedQueryHandler factRelatedQry, boolean visitFromFact,
-				boolean fromVisitSet, boolean fromPatientSet) {
+				boolean fromVisitSet, boolean fromPatientSet,List<ParamType> visitMetaDataParamList) {
 			this.factRelatedQry = factRelatedQry;
 			this.visitFromFact = visitFromFact;
 			this.fromVisitSet = fromVisitSet;
 			this.fromPatientSet = fromPatientSet;
 			this.pType = pType;
+			this.visitMetaDataParamList = visitMetaDataParamList;
 		}
 
 		public void generateSet() throws Exception {
 			IPdoQueryVisitDao pdoQueryVisitDao = pdoDaoFactory
 					.getPdoQueryVisitDAO();
+			pdoQueryVisitDao.setMetaDataParamList(visitMetaDataParamList);
+			
 			ITablePdoQueryVisitDao tablePdoQueryVisitDao = pdoDaoFactory
 					.getTablePdoQueryVisitDAO();
+			tablePdoQueryVisitDao.setMetaDataParamList(this.visitMetaDataParamList);
 
 			// check if visit is in output option
 			boolean detailFlag = visitFactRelated.isSelectDetail();

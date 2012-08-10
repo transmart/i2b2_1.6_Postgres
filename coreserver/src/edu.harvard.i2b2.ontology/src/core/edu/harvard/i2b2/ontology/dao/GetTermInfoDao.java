@@ -131,7 +131,7 @@ public class GetTermInfoDao extends JdbcDaoSupport {
 		            self.setTablename(rs.getString("c_tablename")); 
 		            self.setColumnname(rs.getString("c_columnname")); 
 		            self.setColumndatatype(rs.getString("c_columndatatype")); 
-		            self.setOperator(rs.getString("c_operator"));
+		            self.setOperator(rs.getString("c_operator")); 
 		            self.setDimcode(rs.getString("c_dimcode")); 
 		            self.setTooltip(rs.getString("c_tooltip"));
 		            if(termInfoType.isBlob() == true) {

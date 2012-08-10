@@ -54,16 +54,10 @@ public class ProviderDAO extends CRCLoaderDAO implements IProviderDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be specified in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + this.getDbSchemaName() + "CREATE_TEMP_PROVIDER_TABLE(?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "CREATE_TEMP_PROVIDER_TABLE(?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "CREATE_TEMP_PROVIDER_TABLE(?,?)}";
-			}
 			conn = this.getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "CREATE_TEMP_PROVIDER_TABLE(?,?)}");
 			callStmt.setString(1, tempProviderTableName);
 			callStmt.registerOutParameter(2, java.sql.Types.VARCHAR);
 			callStmt.execute();
@@ -113,16 +107,10 @@ public class ProviderDAO extends CRCLoaderDAO implements IProviderDAO {
 			int uploadId) throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be specified in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + this.getDbSchemaName() + "INSERT_PROVIDER_FROMTEMP(?,?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_PROVIDER_FROMTEMP(?,?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "INSERT_PROVIDER_FROMTEMP(?,?,?)}";
-			}
 			conn = this.getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "INSERT_PROVIDER_FROMTEMP(?,?,?)}");
 			callStmt.setString(1, tempProviderTableName);
 			callStmt.setInt(2, uploadId);
 			callStmt.registerOutParameter(3, java.sql.Types.VARCHAR);
@@ -160,16 +148,10 @@ public class ProviderDAO extends CRCLoaderDAO implements IProviderDAO {
 			throws I2B2Exception {
 		Connection conn = null;
 		try {
-			// smuniraju: Postgres requires only IN arguments to be specified in the call to proc.
-			// CallableStatement callStmt = conn.prepareCall("{call " + this.getDbSchemaName() + "SYNC_CLEAR_PROVIDER_TABLE(?,?,?,?)}");
-			String prepareCallString = "";
-			if(dataSourceLookup.getServerType().equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-				prepareCallString = "{call " + this.getDbSchemaName() + "SYNC_CLEAR_PROVIDER_TABLE(?,?,?)}";
-			} else {
-				prepareCallString = "{call " + this.getDbSchemaName() + "SYNC_CLEAR_PROVIDER_TABLE(?,?,?,?)}";
-			}
-			conn = this.getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall(prepareCallString);
+			conn = getDataSource().getConnection();
+			CallableStatement callStmt = conn.prepareCall("{call "
+					+ this.getDbSchemaName()
+					+ "SYNC_CLEAR_PROVIDER_TABLE(?,?,?,?)}");
 			callStmt.setString(1, tempConceptTableName);
 			callStmt.setString(2, backupProviderDimensionTableName);
 			callStmt.setInt(3, uploadId);

@@ -3,6 +3,7 @@ package edu.harvard.i2b2.crc.dao.setfinder.querybuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import edu.harvard.i2b2.crc.datavo.setfinder.query.PanelType;
 
@@ -34,6 +35,7 @@ public class GroupPanelByTiming {
 			} else if (finalTiming
 					.equalsIgnoreCase(QueryTimingHandler.SAMEINSTANCENUM)) {
 				sameInstanceNumPanelList.add(panel);
+				
 			}
 		}
 		//
@@ -42,6 +44,48 @@ public class GroupPanelByTiming {
 		panelTimingMap.put(QueryTimingHandler.SAMEINSTANCENUM,
 				sameInstanceNumPanelList);
 		return panelTimingMap;
+	}
+	
+	
+	public List<PanelType> filterByInverFlag(List<PanelType> panelList, boolean excludeFlag) {
+		int checkInvertVal = 0;
+		if (excludeFlag == true) { 
+			checkInvertVal = 1; 
+		}
+		List<PanelType>  excludePanelList = new ArrayList<PanelType>();
+		for (PanelType panelType : panelList) { 
+			
+			int invert = panelType.getInvert();
+			if (invert == checkInvertVal ) { 
+				excludePanelList.add(panelType);
+			}
+		}
+		return excludePanelList;
+	}
+	
+	public Map<String, List<PanelType>> filterByExcludeFlag(Map<String, List<PanelType>>  groupPanelByTimingMap,boolean excludeFlag) { 
+		Map<String, List<PanelType>>  invertGroupPanelByTimingMap = new HashMap<String, List<PanelType>>();
+		
+		String[] timingOrder = new String[] {
+				QueryTimingHandler.SAMEINSTANCENUM,
+				QueryTimingHandler.SAMEVISIT, QueryTimingHandler.ANY };
+		
+		for (int k = 0; k < timingOrder.length; k++) {
+			List<PanelType> panelList = groupPanelByTimingMap.get(timingOrder[k]);
+			if (panelList == null) { 
+				continue;
+			}
+			List<PanelType> filteredPanelList1 = filterByInverFlag (panelList, excludeFlag);
+			
+			
+			if (filteredPanelList1.size()>0) {
+				invertGroupPanelByTimingMap .put(timingOrder[k], filteredPanelList1);
+			}
+		
+		}
+		
+		return invertGroupPanelByTimingMap;
+	
 	}
 
 }

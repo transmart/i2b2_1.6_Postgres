@@ -26,6 +26,7 @@
             <xs:element name="create_date" type="xs:dateTime"/>
             <xs:element name="submit_date" type="xs:dateTime"/>
             <xs:element name="complete_date" type="xs:dateTime"/>
+            <xs:element name="query_mode" type="crc:queryModeType"/>
             <!-- <xs:element name="request_type" type="crc:request_typeType"/> -->
         </xs:sequence>
     </xs:complexType>
@@ -44,6 +45,10 @@
         <xs:restriction base="xs:int"/>
     </xs:simpleType>
 
-
+    <xs:simpleType name="queryModeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="optimize_without_temp_table"/>
+        </xs:restriction>
+    </xs:simpleType>
 
 </xs:schema>

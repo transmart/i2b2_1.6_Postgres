@@ -14,11 +14,11 @@ import java.sql.Clob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import edu.harvard.i2b2.common.util.db.JDBCUtil;
 import edu.harvard.i2b2.common.util.jaxb.DTOFactory;
-import edu.harvard.i2b2.crc.dao.DAOFactoryHelper;
 import edu.harvard.i2b2.crc.datavo.pdo.BlobType;
 import edu.harvard.i2b2.crc.datavo.pdo.ConceptType;
 import edu.harvard.i2b2.crc.datavo.pdo.EventType;
@@ -28,7 +28,6 @@ import edu.harvard.i2b2.crc.datavo.pdo.ObserverType;
 import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientIdType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientType;
-import edu.harvard.i2b2.crc.loader.dao.DataSourceLookupDAOFactory;
 
 /**
  * Class to build individual sections of plain pdo xml like
@@ -150,29 +149,14 @@ public class I2B2PdoFactory {
 			}
 
 			if (obsFactBlobFlag) {
-				// smuniraju: Postgres dosen't support Clob datatypes, using TEXT instead.
-				String serverType = DAOFactoryHelper.dataSourceLookup.getServerType();
-				String obsObservationBlob = null;
-				if(serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-					obsObservationBlob = rowSet.getString("obs_observation_blob");
-				} else {
-					Clob observationClob = rowSet.getClob("obs_observation_blob");	
-					obsObservationBlob = (observationClob != null) ? JDBCUtil.getClobString(observationClob) : "";
-				}				
-				if(obsObservationBlob != null) {
-					BlobType blobType = new BlobType();
-					blobType.getContent().add(obsObservationBlob);
-					observationFactType.setObservationBlob(blobType);
-				}
-				/*
-				Clob observationClob = rowSet.getClob("obs_observation_blob");			
+				Clob observationClob = rowSet.getClob("obs_observation_blob");
+
 				if (observationClob != null) {
 					BlobType blobType = new BlobType();
 					blobType.getContent().add(
-							JDBCUtil.getClobString(observationClob));
+							JDBCUtil.getClobStringWithLinebreak(observationClob));
 					observationFactType.setObservationBlob(blobType);
 				}
-				*/
 			}
 
 			if (obsFactStatusFlag) {
@@ -235,7 +219,7 @@ public class I2B2PdoFactory {
 		 * @throws SQLException
 		 * @throws IOException
 		 */
-		public PatientType buildPatientSet(ResultSet rowSet)
+		public PatientType buildPatientSet(ResultSet rowSet, List<ParamType> metaDataParamList)
 				throws SQLException, IOException {
 			PatientType patientDimensionType = new PatientType();
 			PatientIdType patientIdType = new PatientIdType();
@@ -245,108 +229,28 @@ public class I2B2PdoFactory {
 			List<ParamType> paramTypeList = patientDimensionType.getParam();
 			ParamType paramType = null;
 			if (patientDetailFlag) {
-				String vitalStatusCd = rowSet
-						.getString("patient_vital_status_cd");
-				paramType = new ParamType();
-				paramType.setName("vital_status_cd");
-				paramType.setColumn("vital_status_cd");
-				paramType.setValue(vitalStatusCd);
-				paramTypeList.add(paramType);
+				
 
-				Date birthDate = rowSet.getTimestamp("patient_birth_date");
-				if (birthDate != null) {
-					paramType = new ParamType();
-					paramType.setName("birth_date");
-					paramType.setColumn("birth_date");
-					paramType.setValue(dtoFactory.getXMLGregorianCalendar(
-							birthDate.getTime()).toString());
-					paramTypeList.add(paramType);
+				
+				for (Iterator<ParamType> metaParamIterator = metaDataParamList.iterator(); metaParamIterator.hasNext();) { 
+					ParamType metaParamType = metaParamIterator.next();
+					ParamTypeValueBuilder paramValBuilder = new ParamTypeValueBuilder();
+					paramTypeList.add(paramValBuilder.buildParamType(metaParamType,"patient_",null,rowSet));
 				}
-				Date deathDate = rowSet.getTimestamp("patient_death_date");
-				if (deathDate != null) {
-					paramType = new ParamType();
-					paramType.setName("death_date");
-					paramType.setColumn("death_date");
-					paramType.setValue(dtoFactory.getXMLGregorianCalendar(
-							deathDate.getTime()).toString());
-					paramTypeList.add(paramType);
-				}
-				paramType = new ParamType();
-				paramType.setName("sex_cd");
-				paramType.setColumn("sex_cd");
-				paramType.setValue(rowSet.getString("patient_sex_cd"));
-				paramTypeList.add(paramType);
-
-				paramType = new ParamType();
-				paramType.setName("age_in_years_num");
-				paramType.setColumn("age_in_years_num");
-				paramType
-						.setValue(rowSet.getString("patient_age_in_years_num"));
-				paramTypeList.add(paramType);
-
-				paramType = new ParamType();
-				paramType.setName("language_cd");
-				paramType.setColumn("language_cd");
-				paramType.setValue(rowSet.getString("patient_language_cd"));
-				paramTypeList.add(paramType);
-
-				paramType = new ParamType();
-				paramType.setName("race_cd");
-				paramType.setColumn("race_cd");
-				paramType.setValue(rowSet.getString("patient_race_cd"));
-				paramTypeList.add(paramType);
-
-				paramType = new ParamType();
-				paramType.setName("religion_cd");
-				paramType.setColumn("religion_cd");
-				paramType.setValue(rowSet.getString("patient_religion_cd"));
-				paramTypeList.add(paramType);
-
-				paramType = new ParamType();
-				paramType.setName("marital_status_cd");
-				paramType.setColumn("marital_status_cd");
-				paramType.setValue(rowSet
-						.getString("patient_marital_status_cd"));
-				paramTypeList.add(paramType);
-
-				paramType = new ParamType();
-				paramType.setName("zipcode_char");
-				paramType.setColumn("zipcode_char");
-				paramType.setValue(rowSet.getString("patient_zip_cd"));
-				paramTypeList.add(paramType);
-
-				paramType = new ParamType();
-				paramType.setName("statecityzip_path_char");
-				paramType.setColumn("statecityzip_path_char");
-				paramType.setValue(rowSet
-						.getString("patient_statecityzip_path"));
-				paramTypeList.add(paramType);
-
 			}
+			
+			
+			
 
 			if (patientBlobFlag) {
-				// smuniraju: Postgres doesn't support Clob datatypes, using TEXT instaed.				
-				String serverType = DAOFactoryHelper.dataSourceLookup.getServerType();
-				String patientBlob = null;
-				if(serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-					patientBlob = rowSet.getString("patient_patient_blob");
-				} else {
-					Clob patientClob = rowSet.getClob("patient_patient_blob");	
-					patientBlob = (patientClob != null) ? JDBCUtil.getClobString(patientClob) : "";
-				}				
-				if(patientBlob != null) {
-					BlobType blobType = new BlobType();
-					blobType.getContent().add(patientBlob);
-					patientDimensionType.setPatientBlob(blobType);
-				}
-				/*Clob patientClob = rowSet.getClob("patient_patient_blob");
+				Clob patientClob = rowSet.getClob("patient_patient_blob");
 
 				if (patientClob != null) {
 					BlobType patientBlobType = new BlobType();
 					patientBlobType.getContent().add(
-							JDBCUtil.getClobString(patientClob));
+							JDBCUtil.getClobStringWithLinebreak(patientClob));
 					patientDimensionType.setPatientBlob(patientBlobType);
-				}*/
+				}
 			}
 
 			if (patientStatusFlag) {
@@ -422,31 +326,14 @@ public class I2B2PdoFactory {
 			}
 
 			if (providerBlobFlag) {
-				// smuniraju: Postgres doesn't support Clob datatypes, using TEXT instaed.
-				String serverType = DAOFactoryHelper.dataSourceLookup.getServerType();
-				String providerBlobString = null;
-				if(serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-					providerBlobString = rowSet.getString("provider_provider_blob");
-				} else {
-					Clob conceptClob = rowSet.getClob("provider_provider_blob");
-					if(conceptClob != null) {
-						providerBlobString = JDBCUtil.getClobString(conceptClob);
-					}
-				}
-				if (providerBlobString != null) {
-					BlobType providerBlobType = new BlobType();
-					providerBlobType.getContent().add(providerBlobString);
-					providerDimensionType.setObserverBlob(providerBlobType);
-				}
-				/*
 				Clob providerClob = rowSet.getClob("provider_provider_blob");
 
 				if (providerClob != null) {
 					BlobType providerBlobType = new BlobType();
 					providerBlobType.getContent().add(
-							JDBCUtil.getClobString(providerClob));
+							JDBCUtil.getClobStringWithLinebreak(providerClob));
 					providerDimensionType.setObserverBlob(providerBlobType);
-				}*/
+				}
 			}
 
 			if (providerStatusFlag) {
@@ -525,30 +412,14 @@ public class I2B2PdoFactory {
 			}
 
 			if (conceptBlobFlag) {
-				// smuniraju: Postgres dosen't support Clob datatypes, using TEXT instead.
-				String serverType = DAOFactoryHelper.dataSourceLookup.getServerType();
-				String conceptBlobString = null;
-				if(serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-					conceptBlobString = rowSet.getString("concept_concept_blob");
-				} else {
-					Clob conceptClob = rowSet.getClob("concept_concept_blob");
-					if(conceptClob != null) {
-						conceptBlobString = JDBCUtil.getClobString(conceptClob);
-					}
-				}
-				if(conceptBlobString != null) {
-					BlobType conceptBlobType = new BlobType();
-					conceptBlobType.getContent().add(conceptBlobString);
-					conceptDimensionType.setConceptBlob(conceptBlobType);
-				}	
-				/* 
-				 Clob conceptClob = rowSet.getClob("concept_concept_blob");
+				Clob conceptClob = rowSet.getClob("concept_concept_blob");
+
 				if (conceptClob != null) {
 					BlobType conceptBlobType = new BlobType();
 					conceptBlobType.getContent().add(
-							JDBCUtil.getClobString(conceptClob));
+							JDBCUtil.getClobStringWithLinebreak(conceptClob));
 					conceptDimensionType.setConceptBlob(conceptBlobType);
-				}*/
+				}
 			}
 
 			if (conceptStatusFlag) {
@@ -628,31 +499,14 @@ public class I2B2PdoFactory {
 			}
 
 			if (modifierBlobFlag) {
-				// smuniraju: Postgres doesn't support Clob datatypes, using TEXT instaed.
-				String serverType = DAOFactoryHelper.dataSourceLookup.getServerType();
-				String modifierBlobString = null;
-				if(serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-					modifierBlobString = rowSet.getString("modifier_modifier_blob");
-				} else {
-					Clob conceptClob = rowSet.getClob("modifier_modifier_blob");
-					if(conceptClob != null) {
-						modifierBlobString = JDBCUtil.getClobString(conceptClob);
-					}
-				}
-				if (modifierBlobString != null) {
-					BlobType modifierBlobType = new BlobType();
-					modifierBlobType.getContent().add(modifierBlobString);
-					modifierDimensionType.setModifierBlob(modifierBlobType);
-				}
-				/*
 				Clob modifierClob = rowSet.getClob("modifier_modifier_blob");
 
 				if (modifierClob != null) {
 					BlobType modifierBlobType = new BlobType();
 					modifierBlobType.getContent().add(
-							JDBCUtil.getClobString(modifierClob));
+							JDBCUtil.getClobStringWithLinebreak(modifierClob));
 					modifierDimensionType.setModifierBlob(modifierBlobType);
-				}*/
+				}
 			}
 
 			if (modifierStatusFlag) {
@@ -707,7 +561,7 @@ public class I2B2PdoFactory {
 		 * @throws SQLException
 		 * @throws IOException
 		 */
-		public EventType buildEventSet(ResultSet rowSet) throws SQLException,
+		public EventType buildEventSet(ResultSet rowSet,List<ParamType> metaDataParamList) throws SQLException,
 				IOException {
 			EventType visitDimensionType = new EventType();
 
@@ -720,28 +574,7 @@ public class I2B2PdoFactory {
 
 			if (eventDetailFlag) {
 
-				ParamType inoutParamType = new ParamType();
-				inoutParamType.setValue(rowSet.getString("visit_inout_cd"));
-				inoutParamType.setColumn("inout_cd");
-				visitDimensionType.getParam().add(inoutParamType);
-
-				ParamType locationParamType = new ParamType();
-				locationParamType.setValue(rowSet
-						.getString("visit_location_cd"));
-				locationParamType.setColumn("location_cd");
-				visitDimensionType.getParam().add(locationParamType);
-
-				ParamType siteParamType = new ParamType();
-				siteParamType.setColumn("location_path");
-				siteParamType.setValue(rowSet.getString("visit_location_path"));
-				visitDimensionType.getParam().add(siteParamType);
-
-				ParamType activeStatusParamType = new ParamType();
-				siteParamType.setColumn("active_status_cd");
-				siteParamType.setValue(rowSet
-						.getString("visit_active_status_cd"));
-				visitDimensionType.getParam().add(activeStatusParamType);
-
+				
 				Date startDate = rowSet.getTimestamp("visit_start_date");
 
 				if (startDate != null) {
@@ -755,34 +588,27 @@ public class I2B2PdoFactory {
 					visitDimensionType.setEndDate(dtoFactory
 							.getXMLGregorianCalendar(endDate.getTime()));
 				}
+				for (Iterator<ParamType> metaParamIterator = metaDataParamList.iterator(); metaParamIterator.hasNext();) { 
+					ParamType metaParamType = metaParamIterator.next();
+					ParamTypeValueBuilder paramValBuilder = new ParamTypeValueBuilder();
+					visitDimensionType.getParam().add(paramValBuilder.buildParamType(metaParamType,"visit_",null,rowSet));
+				}
+				
 			}
 
 			if (eventBlobFlag) {
-				// smuniraju: Postgres doesn't support Clob datatypes, using TEXT instaed.
-				String serverType = DAOFactoryHelper.dataSourceLookup.getServerType();
-				String visitBlobString = null;
-				if(serverType.equalsIgnoreCase(DataSourceLookupDAOFactory.POSTGRES)) {
-					visitBlobString = rowSet.getString("visit_visit_blob");
-				} else {
-					Clob conceptClob = rowSet.getClob("visit_visit_blob");
-					if(conceptClob != null) {
-						visitBlobString = JDBCUtil.getClobString(conceptClob);
-					}
-				}
-				if (visitBlobString != null) {
-					BlobType visitBlobType = new BlobType();
-					visitBlobType.getContent().add(visitBlobString);
-					visitDimensionType.setEventBlob(visitBlobType);
-				}				
-				/* Clob visitClob = rowSet.getClob("visit_visit_blob");
+				Clob visitClob = rowSet.getClob("visit_visit_blob");
 
 				if (visitClob != null) {
 					BlobType visitBlobType = new BlobType();
 					visitBlobType.getContent().add(
-							JDBCUtil.getClobString(visitClob));
+							JDBCUtil.getClobStringWithLinebreak(visitClob));
 					visitDimensionType.setEventBlob(visitBlobType);
-				}*/
+				}
 			}
+			
+			
+			
 
 			if (eventStatusFlag) {
 				if (rowSet.getTimestamp("visit_update_date") != null) {

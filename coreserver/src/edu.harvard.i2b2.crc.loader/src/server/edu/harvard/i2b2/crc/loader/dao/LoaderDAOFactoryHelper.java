@@ -9,7 +9,6 @@ public  class LoaderDAOFactoryHelper {
 
 	public static final String ORACLE = "ORACLE";
 	public static final String SQLSERVER = "SQLSERVER";
-	public static final String POSTGRES = "POSTGRES";
 	DataSourceLookup dataSourceLookup = null;
 
 	public LoaderDAOFactoryHelper(String hiveId, String projectId, String ownerId) throws I2B2DAOException {
@@ -37,7 +36,7 @@ public  class LoaderDAOFactoryHelper {
 
 	public ILoaderDAOFactory getDAOFactory() throws I2B2DAOException {
 		String dataSourceName = dataSourceLookup.getServerType();
-		if (dataSourceName.equalsIgnoreCase(ORACLE) || dataSourceName.equalsIgnoreCase(POSTGRES)) {
+		if (dataSourceName.equalsIgnoreCase(ORACLE)) {
 			return new OracleLoaderDAOFactory(dataSourceLookup);
 		} else if (dataSourceName.equalsIgnoreCase(SQLSERVER)) {
 			return new OracleLoaderDAOFactory(dataSourceLookup);

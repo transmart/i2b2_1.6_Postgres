@@ -93,8 +93,7 @@ public class ObservationFactDao extends CRCDAO implements IObservationFactDao {
 				sql += (" AND obs.start_date = to_date('"
 						+ sqlFormatedStartDate + " ', 'DD-MON-YYYY HH24:MI:SS') ");
 			} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.SQLSERVER) || dataSourceLookup.getServerType().equalsIgnoreCase(
-							DAOFactoryHelper.POSTGRES)) {
+					DAOFactoryHelper.SQLSERVER)) {
 				SimpleDateFormat dateFormat = new SimpleDateFormat(
 						"yyyy-MM-dd'T'HH:mm:ss");
 				sqlFormatedStartDate = dateFormat.format(gc.getTime());

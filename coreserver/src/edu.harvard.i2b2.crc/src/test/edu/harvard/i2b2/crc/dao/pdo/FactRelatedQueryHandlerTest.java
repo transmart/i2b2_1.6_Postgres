@@ -73,8 +73,7 @@ public class FactRelatedQueryHandlerTest {
 					pdoRequestType.getFilterList(), pdoRequestType
 							.getOutputOption());
 		} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
-				DAOFactoryHelper.ORACLE) || dataSourceLookup.getServerType().equalsIgnoreCase(
-						DAOFactoryHelper.POSTGRES)) {
+				DAOFactoryHelper.ORACLE)) {
 			pdoQueryHandler = new FactRelatedQueryHandler(dataSourceLookup,
 					pdoRequestType.getInputList(), pdoRequestType
 							.getFilterList(), pdoRequestType.getOutputOption());

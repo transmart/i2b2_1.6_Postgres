@@ -10,10 +10,7 @@ public class DAOFactoryHelper {
 
 	public static final String ORACLE = "ORACLE";
 	public static final String SQLSERVER = "SQLSERVER";
-	public static final String POSTGRES = "POSTGRES";
-	
-	// smuniraju marked DataSourceLookup as static to allow access from SQLClauseUtil and I2B2PdoFactory
-	public static DataSourceLookup dataSourceLookup = null;
+	DataSourceLookup dataSourceLookup = null;
 	DataSource dataSource = null;
 	DataSourceLookup originalDataSourceLookup = null;
 
@@ -63,13 +60,6 @@ public class DAOFactoryHelper {
 						originalDataSourceLookup);
 			}
 		} else if (dataSourceName.equalsIgnoreCase(SQLSERVER)) {
-			if (dataSource != null) {
-				return new OracleDAOFactory(dataSourceLookup, dataSource);
-			} else {
-				return new OracleDAOFactory(dataSourceLookup,
-						originalDataSourceLookup);
-			}
-		} else if (dataSourceName.equalsIgnoreCase(POSTGRES)) {
 			if (dataSource != null) {
 				return new OracleDAOFactory(dataSourceLookup, dataSource);
 			} else {

@@ -87,21 +87,10 @@ public class UploadStatusDAO extends CRCLoaderDAO implements UploadStatusDAOI {
 		return uploadStatus;
 	}
 
-	public void dropTempTable(String tempTable) { 
-		// smuniraju: jdbcTemplate.update returned an error. 
-		// Replaced it to use CallableStatement
-		
-		// final String sql = "{call " + getDbSchemaName()
-		// 		+ "REMOVE_TEMP_TABLE(?)}";
-		// jdbcTemplate.update(sql, new Object[] { tempTable });
-		try {
-			Connection conn = getDataSource().getConnection();
-			CallableStatement callStmt = conn.prepareCall("{call " + getDbSchemaName() + "REMOVE_TEMP_TABLE(?)}");			
-			callStmt.setString(1, tempTable);		
-			callStmt.execute();
-		} catch(SQLException sqlEx) {
-			sqlEx.printStackTrace();			
-		} 
+	public void dropTempTable(String tempTable) {
+		final String sql = "{call " + getDbSchemaName()
+				+ "REMOVE_TEMP_TABLE(?)}";
+		jdbcTemplate.update(sql, new Object[] { tempTable });
 	}
 
 	/**
@@ -515,8 +504,7 @@ public class UploadStatusDAO extends CRCLoaderDAO implements UploadStatusDAOI {
 	/**
 	 * <code>Visit</code> Insert Object.
 	 */
-	protected class UploadStatusInsert extends SqlUpdate {		
-		private String INSERT_POSTGRES = ""; 
+	protected class UploadStatusInsert extends SqlUpdate {
 		/**
 		 * Create a new instance of OwnerInsert.
 		 * 
@@ -526,25 +514,12 @@ public class UploadStatusDAO extends CRCLoaderDAO implements UploadStatusDAOI {
 		protected UploadStatusInsert(DataSource ds, String schemaName,
 				DataSourceLookup dataSourceLookup) {
 
-			this.setDataSource(dataSource);
-			 if (dataSourceLookup.getServerType().equalsIgnoreCase(
-							DataSourceLookupDAOFactory.POSTGRES)) {
-				 INSERT_POSTGRES = "INSERT INTO " + schemaName + "upload_status ("
-						+ " upload_id," + " upload_label, " + " user_id, "
-						+ " source_cd, " + " no_of_record, "
-						+ " deleted_record, " + " loaded_record, "
-						+ " load_date, " + " end_date, " + " load_status, "
-						+ " input_file_name, " + " log_file_name, "
-						+ " message, " + " transform_name) "
-						+ " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-				return;
-			}
-			
-			String sql = null;				
+			String sql = null;
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					LoaderDAOFactoryHelper.SQLSERVER)) {
-				sql = "INSERT INTO " + schemaName + "upload_status (" 
-						+ " upload_label, " + " user_id, " + " source_cd, "
+				sql = "INSERT INTO " + schemaName + "upload_status (" +
+
+				" upload_label, " + " user_id, " + " source_cd, "
 						+ " no_of_record, " + " deleted_record, "
 						+ " loaded_record, " + " load_date, " + " end_date, "
 						+ " load_status, " + " input_file_name, "
@@ -563,11 +538,12 @@ public class UploadStatusDAO extends CRCLoaderDAO implements UploadStatusDAOI {
 						+ " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 			}
 			this.setSql(sql);
-			
+			this.setDataSource(dataSource);
+
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					LoaderDAOFactoryHelper.ORACLE)) {
 				declareParameter(new SqlParameter(Types.INTEGER));
-			} 			
+			}
 			declareParameter(new SqlParameter(Types.VARCHAR));
 			declareParameter(new SqlParameter(Types.VARCHAR));
 			declareParameter(new SqlParameter(Types.VARCHAR));
@@ -587,28 +563,6 @@ public class UploadStatusDAO extends CRCLoaderDAO implements UploadStatusDAOI {
 		protected void insert(UploadStatus uploadStatus) {
 			int uploadId = 0;
 			Object[] objs = null;
-			if (dataSourceLookup.getServerType().equalsIgnoreCase(
-					LoaderDAOFactoryHelper.POSTGRES)) {
-				jdbcTemplate = getJdbcTemplate(); 
-				uploadId = jdbcTemplate.queryForInt(
-						"select nextval('sq_uploadstatus_uploadid')");
-				uploadStatus.setUploadId(uploadId);
-				objs = new Object[] { uploadStatus.getUploadId(),
-						uploadStatus.getUploadLabel(),
-						uploadStatus.getUserId(), uploadStatus.getSourceCd(),
-						uploadStatus.getNoOfRecord(),
-						uploadStatus.getDeletedRecord(),
-						uploadStatus.getLoadedRecord(),
-						uploadStatus.getLoadDate(), uploadStatus.getEndDate(),
-						uploadStatus.getLoadStatus(),
-						uploadStatus.getInputFileName(),
-						uploadStatus.getLogFileName(),
-						uploadStatus.getMessage(),
-						uploadStatus.getTransformName() };		
-				jdbcTemplate.update(INSERT_POSTGRES, objs);
-				return;
-			} 
-			
 			if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					LoaderDAOFactoryHelper.ORACLE)) {
 				uploadId = getJdbcTemplate().queryForInt(

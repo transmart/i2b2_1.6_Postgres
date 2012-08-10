@@ -17,6 +17,7 @@ import edu.harvard.i2b2.common.exception.I2B2Exception;
 import edu.harvard.i2b2.common.util.jaxb.JAXBUnWrapHelper;
 import edu.harvard.i2b2.common.util.jaxb.JAXBUtilException;
 import edu.harvard.i2b2.ontology.datavo.i2b2message.BodyType;
+import edu.harvard.i2b2.ontology.datavo.vdo.GetCategoriesType;
 import edu.harvard.i2b2.ontology.datavo.vdo.GetReturnType;
 
 public class GetCategoriesDataMessage extends RequestDataMessage{
@@ -32,12 +33,12 @@ public class GetCategoriesDataMessage extends RequestDataMessage{
      * @return
      * @throws JAXBUtilException
      */
-    public GetReturnType getReturnType() throws JAXBUtilException {
+    public GetCategoriesType getCatType() throws JAXBUtilException {
         BodyType bodyType = reqMessageType.getMessageBody();
         JAXBUnWrapHelper helper = new JAXBUnWrapHelper();
-        GetReturnType getReturnType = (GetReturnType) helper.getObjectByClass(bodyType.getAny(),
-                GetReturnType.class);        
-        return getReturnType;
+        GetCategoriesType getCatType = (GetCategoriesType) helper.getObjectByClass(bodyType.getAny(),
+                GetCategoriesType.class);        
+        return getCatType;
     }
 
 
