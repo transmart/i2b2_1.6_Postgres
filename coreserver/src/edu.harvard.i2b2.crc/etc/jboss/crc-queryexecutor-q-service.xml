@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- $Id: crc-queryexecutor-q-service.xml,v 1.1 2007/05/22 16:07:18 rk903 Exp $ -->
+
+<server>
+
+  <!-- ==================================================================== -->
+  <!-- JMS Stuff                                                            -->
+  <!-- ==================================================================== -->
+
+  <mbean code="org.jboss.mq.server.jmx.Queue"
+	 name="jboss.mq.destination:service=Queue,name=jms.querytool.QueryExecutor">
+    <depends optional-attribute-name="DestinationManager">jboss.mq:service=DestinationManager</depends>
+    <depends optional-attribute-name="SecurityManager">jboss.mq:service=SecurityManager</depends>
+    <attribute name="SecurityConf">
+      <security>
+        <role name="guest" read="true" write="true"/>
+        <role name="publisher" read="true" write="true" create="false"/>
+        <role name="noacc" read="false" write="false" create="false"/>
+      </security>
+    </attribute>
+    <attribute name="RedeliveryLimit">0</attribute>
+  </mbean>
+  
+</server>

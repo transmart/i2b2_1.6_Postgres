@@ -1,0 +1,15 @@
+
+<service name="CRCLoaderService">
+    <description>
+        This is a Web Service for edu.harvard.i2b2.crc
+    </description>
+    <parameter name="ServiceClass" locked="false">edu.harvard.i2b2.crc.loader.ws.ProviderRestService</parameter>
+    <operation name="publishDataRequest">
+        <messageReceiver class="org.apache.axis2.receivers.RawXMLINOutMessageReceiver"/>
+    </operation>
+    <operation name="getLoadDataStatusRequest">
+        <messageReceiver class="org.apache.axis2.receivers.RawXMLINOutMessageReceiver"/>
+    </operation>
+    
+</service>
+

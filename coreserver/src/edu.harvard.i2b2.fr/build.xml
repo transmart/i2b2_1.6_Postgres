@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+$Id: build.xml,v 1.4 2008/07/23 19:53:55 tomcat Exp $
+-->
+<project name="FRC" basedir="." default="jaxb_gen">
+
+	<property name="Name" value="FRC" />
+	<import file="../edu.harvard.i2b2.common/common_build.xml" />
+	<property environment="env" />
+
+	<!-- OTHER SETTINGS -->
+	<property name="ejbspec" value="2.0" />
+	<property name="jboss.version" value="4.0" />
+
+
+	<property file="etc/spring/fr_application_directory.properties" />
+	<property file="db.oracle.properties" />
+
+	<!-- =================================================================== -->
+	<!-- 								INIT 								 -->
+	<!-- =================================================================== -->
+	<target name="init" depends="common_init,common-classpath" description="Prepare for build">
+		<path id="classpath">
+			<path refid="common-classpath" />
+			<fileset dir="${lib}">
+				<include name="*.jar" />
+			</fileset>
+			<fileset dir="${genlib}">
+				<include name="*.jar" />
+			</fileset>
+			<pathelement location="${classes}" />
+			<pathelement location="../${i2b2CommonProject}/dist/i2b2Common-core.jar" />
+		</path>
+		<taskdef name="xjc" classname="com.sun.tools.xjc.XJCTask">
+			<classpath refid="classpath" />
+		</taskdef>
+	</target>
+
+
+
+	<!-- =================================================================== -->
+	<!-- 								COMMON JAXB GENERATION 				 -->
+	<!-- =================================================================== -->
+	<target name="jaxb_gen" depends="init" description="Generate JAXB classes for i2b2 and Patient Data messages">
+
+		<xjc extension="true" destdir="${gensrc}" removeOldOutput="no">
+			<classpath path="${classpath}"/>
+			<schema dir="../${i2b2xmlproject}/xsd/cell/fr_1.0" includes="FR_QRY.xsd" />
+			<binding dir="." includes="etc/xsd/fr_qry.xjb" />
+						
+			<schema dir="../${i2b2xmlproject}/xsd/hive/msg_1.1" includes="i2b2_response.xsd" />
+			<schema dir="../${i2b2xmlproject}/xsd/cell/pm_1.1" includes="PM_USER.xsd" />
+			<binding dir="." includes="etc/xsd/i2b2_response.xjb" />
+			<binding dir="." includes="etc/xsd/i2b2_pm_bindings.xjb" />
+		</xjc>
+
+		<!--
+		 <java dir="." jar="../edu.harvard.i2b2.common/lib/jaxb/jaxb-xjc.jar" fork="true" failonerror="true" >
+		 	<arg line="-quiet -nv -extension ../edu.harvard.i2b2.xml/xsd/hive/pdo_1.1/i2b2_PDO.xsd -b etc/xsd/i2b2_pdo.xjb 
+		 		-d ${gensrc}"/>
+            <jvmarg value="-Djava.endorsed.dirs=../edu.harvard.i2b2.common/lib/jaxb" />
+            <classpath refid="classpath"/>
+		  </java>
+		 -->
+	</target>
+
+
+	<!-- =================================================================== -->
+	<!-- 								CLEAN 								 -->
+	<!-- =================================================================== -->
+	<target name="clean" depends="common_clean" description="Clean all build products" />
+
+
+
+	<!-- =================================================================== -->
+	<!-- 								COMPILE 							 -->
+	<!-- =================================================================== -->
+	<target name="compile" depends="init" description="Compile files without cleaning">
+		<mkdir dir="${classes}" />
+		<javac destdir="${classes}" optimize="${javac.opt}" debug="${javac.debug}">
+			<src path="${gensrc}" />
+			<src path="${src}/server/" />
+
+
+			<src path="${src}/test" />
+
+			<classpath refid="classpath" />
+		</javac>
+	</target>
+
+
+	<!-- =================================================================== -->
+	<!-- 								DIST 								 -->
+	<!-- =================================================================== -->
+	<target name="dist" depends="init,jaxb_gen,compile" description="package application for distribution/deployment">
+		<!-- Package EJB for jboss -->
+		<echo message="${Name}: Creating the ejb archive package!" />
+		<jar destfile="${dist}/${Name}-EJB.jar">
+			<fileset dir="${classes}">
+				<exclude name="edu/harvard/i2b2/fr/ws/**/**" />
+				<exclude name="edu/harvard/i2b2/fr/delegate/**" />
+			</fileset>
+			<zipfileset dir="../${i2b2CommonProject}/dist/" prefix="lib" includes="*.jar"/>
+		</jar>
+
+		<antcall target="dist-server" />
+		<antcall target="axis2aar"/>			
+	</target>
+
+	<!-- =================================================================== -->
+	<!-- 								SERVER DIST							 -->
+	<!-- =================================================================== -->
+	<target name="dist-server" depends="init,compile" description="package application for distribution/deployment">
+		<echo message="${Name}: Creating the server archive package!" />
+		<jar compress="true" jarfile="${dist}/${Name}-Server.jar">
+			<fileset dir="${etc}/spring">
+				<include name="fr_application_directory.*" />
+			</fileset>
+		</jar>
+	</target>
+
+    <!-- =================================================================== -->
+	<!-- 								AXIS2 JAR							 -->
+	<!-- =================================================================== -->
+		<target name="axis2aar">
+			<jar compress="true" jarfile="${dist}/${Name}.aar">
+				<fileset dir="${classes}">
+					<include name="edu/harvard/i2b2/fr/ws/**" />
+					<include name="edu/harvard/i2b2/fr/delegate/**" />
+				</fileset>
+				<zipfileset dir="etc/axis2/META-INF" prefix="META-INF" includes="services.xml" />
+				<zipfileset dir="../${i2b2CommonProject}/dist/" prefix="lib" includes="*.jar"/>
+			</jar>
+		</target>
+
+	<!-- =================================================================== -->
+	<!-- 								AXIS2 JAR							 -->
+	<!-- =================================================================== -->
+	<target name="create-rest-war">
+	        <war warfile="${dist}/${Name}.war"
+	            webxml="etc/web/web.xml">
+	            <webinf dir="etc" includes="wsdl/*.wsdl"/>
+	            <classes dir="${classes}" includes="edu/harvard/i2b2/fr/ws/*.class"/>
+	        </war>
+	 </target>
+
+	<!-- =================================================================== -->
+		<!-- 							DEPLOYMENT 								 -->
+		<!-- =================================================================== -->
+		<target name="deploy" description="Deployment step:copy distribution jar files to app server">
+			<echo message="${Name}: Copying archive package to app server ${jboss.home}" />
+			<copy todir="${jboss.home}/server/default/deploy">
+				<fileset dir="${dist}">
+					<exclude name="**/**.aar" />
+					<exclude name="**/*client.jar" />
+				</fileset>
+			</copy>
+
+			
+
+			<!-- copy axis archive files to axis directory -->
+			<copy todir="${jboss.home}/server/default/deploy/${axis2.war.name}/WEB-INF/services">
+				<fileset dir="${dist}">
+					<include name="**/**.aar" />
+				</fileset>
+			</copy>
+			
+			
+			<echo message="copying property files to ${edu.harvard.i2b2.fr.applicationdir}" />
+			<copy todir="${edu.harvard.i2b2.fr.applicationdir}">
+				<fileset dir="${etc}/spring">
+					<exclude name="fr_application_directory.properties" />
+				</fileset>
+			</copy>
+			
+		</target>
+
+
+
+	<!-- =================================================================== -->
+	<!-- 			RUN JUNIT TESTS AND GENERATE REPORT			 			 -->
+	<!-- =================================================================== -->
+	<target name="test" depends="compile"  description="Compile and run JUnit tests and testcases">
+		<echo message="${Name}: Running test cases!" />
+		<property name="reports.dir" value="${report}" />
+		<!-- run the unit tests -->
+		<junit fork="yes" haltonfailure="no" maxmemory="512M" printsummary="on" errorProperty="test.failed" failureProperty="test.failed" showoutput="false">
+			<formatter type="xml" />
+			<jvmarg value="-Dtestfiledir=${testfiledir}" />
+			<jvmarg value="-Djava.endorsed.dirs=endorsed_lib" />
+			<!--<test name="AllTests" todir="${report.dir}"/>-->
+			<batchtest fork="yes" todir="${reports.dir}">
+				<fileset dir="test">
+					<include name="**/FRServiceRESTTest.java" />
+				</fileset>
+			</batchtest>
+			<classpath>
+				<path refid="classpath" />
+			</classpath>
+		</junit>
+		<!-- create the junit test report -->
+		<echo message="${Name}: Generating reports!" />
+		<junitreport>
+			<fileset dir="${reports.dir}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report format="frames" todir="${reports.dir}" />
+		</junitreport>
+		<fail message="Tests failed." if="test.failed" />
+	</target>
+	
+
+
+</project>
+
+

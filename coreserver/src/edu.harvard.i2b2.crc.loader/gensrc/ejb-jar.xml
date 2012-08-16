@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ejb-jar PUBLIC "-//Sun Microsystems, Inc.//DTD Enterprise JavaBeans 2.0//EN" "http://java.sun.com/dtd/ejb-jar_2_0.dtd">
+
+<ejb-jar id="ejb_jar_1">
+  <enterprise-beans>
+    <!--Enterprise Beans-->
+    <session id="session_ejb.crc.loader.frbean">
+      <description>FR bean</description>
+      <display-name>FR Bean</display-name>
+      <ejb-name>ejb.crc.loader.frbean</ejb-name>
+      <home>edu.harvard.i2b2.crc.loader.ejb.fr.FRRemoteHome</home>
+      <remote>edu.harvard.i2b2.crc.loader.ejb.fr.FRBeanRemote</remote>
+      <local-home>edu.harvard.i2b2.crc.loader.ejb.fr.FRLocalHome</local-home>
+      <local>edu.harvard.i2b2.crc.loader.ejb.fr.FRLocal</local>
+      <ejb-class>edu.harvard.i2b2.crc.loader.ejb.fr.FRBean</ejb-class>
+      <session-type>Stateless</session-type>
+      <transaction-type>Bean</transaction-type>
+      <!--Define your Ejb env entries in a file called ejb-env-entries-FRBean.xml and place it in your merge directory. Overrides @ejb.env-entry's-->
+      <!--Define your Ejb refs entries in a file called ejb-ejbrefs-FRBean.xml and place it in your merge directory.-->
+      <!--Define your Ejb security role refs entries in a file called ejb-sec-rolerefs-FRBean.xml and place it in your merge directory. Overrides @ejb.security-role-ref's-->
+      <!--Define your resource references in a file called ejb-resourcerefs-FRBean.xml and place it in your merge directory. Overrides @ejb.resource-ref's-->
+      <!--Define your resource env references in a file called ejb-resource-env-refs-FRBean.xml and place it in your merge directory. Overrides @ejb.resource-env-ref's-->
+      <!--Define your destination references in a file called ejb-destinationrefs-FRBean.xml and place it in your merge directory. Overrides @ejb.destination-ref's-->
+    </session>
+    <!--To add session beans that you have deployment descriptor info for, add a file to your XDoclet merge directory called session-beans.xml that contains the <session></session> markup for those beans.-->
+    <!--To add entity beans that you have deployment descriptor info for, add a file to your XDoclet merge directory called entity-beans.xml that contains the <entity></entity> markup for those beans.-->  
+    <!--To add message driven beans that you have deployment descriptor info for, add a file to your XDoclet merge directory called message-driven-beans.xml that contains the <message-driven></message-driven> markup for those beans.--> 
+  </enterprise-beans>
+  <!--<relationships>To add relationships for beans that you have deployment descriptor info for, add a file to your XDoclet merge directory called relationships.xml that contains the <ejb-relation></ejb-relation> markup for those beans.</relationships>-->
+  <!--To specify your own assembly descriptor info here, add a file to your XDoclet merge directory called assembly-descriptor.xml that contains the <assembly-descriptor></assembly-descriptor> markup. Overrides xdoclet generation.-->
+  <assembly-descriptor id="AssemblyDescriptor_1">
+    <!--To specify additional security-role elements, add a file in the merge directory called ejb-security-roles.xml that contains them.-->
+    <!--To specify additional method-permission elements, add a file in the merge directory called ejb-method-permissions.xml that contains them.-->
+    <!--To specify additional container-transaction elements, add a file in the merge directory called ejb-container-transactions.xml that contains them.-->
+    <container-transaction id="MethodTransaction_1">
+      <description>Description not supported yet</description>
+      <method id="MethodElement_1">
+        <description>Description not supported yet</description>
+        <ejb-name>ejb.crc.loader.frbean</ejb-name>
+        <method-intf>Remote</method-intf>
+        <method-name>createClient</method-name>
+        <method-params>
+          <method-param>int</method-param>
+          <method-param>edu.harvard.i2b2.crc.loader.datavo.loader.query.DataListType</method-param>
+          <method-param>edu.harvard.i2b2.crc.loader.datavo.i2b2message.SecurityType</method-param>
+          <method-param>java.lang.String</method-param>
+          <method-param>java.lang.String</method-param>
+        </method-params>
+      </method>
+      <trans-attribute>Required</trans-attribute>
+    </container-transaction>
+    <container-transaction id="MethodTransaction_2">
+      <description>Description not supported yet</description>
+      <method id="MethodElement_2">
+        <description>Description not supported yet</description>
+        <ejb-name>ejb.crc.loader.frbean</ejb-name>
+        <method-intf>Local</method-intf>
+        <method-name>createClient</method-name>
+        <method-params>
+          <method-param>int</method-param>
+          <method-param>edu.harvard.i2b2.crc.loader.datavo.loader.query.DataListType</method-param>
+          <method-param>edu.harvard.i2b2.crc.loader.datavo.i2b2message.SecurityType</method-param>
+          <method-param>java.lang.String</method-param>
+          <method-param>java.lang.String</method-param>
+        </method-params>
+      </method>
+      <trans-attribute>Required</trans-attribute>
+    </container-transaction>
+    <!--To specify additional message-destination elements, add a file in the merge directory called ejb-message-destinations.xml that contains them.-->
+    <!--To specify an exclude-list element, add a file in the merge directory called ejb-exclude-list.xml that contains it.-->
+  </assembly-descriptor>
+</ejb-jar>
