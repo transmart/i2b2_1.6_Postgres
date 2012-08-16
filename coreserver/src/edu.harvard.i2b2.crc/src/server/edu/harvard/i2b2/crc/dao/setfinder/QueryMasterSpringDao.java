@@ -82,7 +82,7 @@ public class QueryMasterSpringDao extends CRCDAO implements IQueryMasterDao {
 		String sql = "UPDATE "
 				+ getDbSchemaName()
 				+ "QT_QUERY_MASTER set  GENERATED_SQL = ? where query_master_id = ?";
-		jdbcTemplate.update(sql, new Object[] { generatedSql, masterId });
+		jdbcTemplate.update(sql, new Object[] { generatedSql, Integer.valueOf(masterId) });
 		// jdbcTemplate.update(sql);
 	}
 
@@ -182,7 +182,7 @@ public class QueryMasterSpringDao extends CRCDAO implements IQueryMasterDao {
 		QtQueryMaster queryMaster = null;
 		try {
 			queryMaster = (QtQueryMaster) jdbcTemplate.queryForObject(sql,
-					new Object[] { masterId, DELETE_NO_FLAG },
+					new Object[] { Integer.valueOf(masterId), DELETE_NO_FLAG },
 					queryMasterMapper);
 		} catch (IncorrectResultSizeDataAccessException inResultEx) {
 			log.error("Query doesn't exists for masterId :[" + masterId + "]");

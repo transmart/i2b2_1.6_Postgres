@@ -111,7 +111,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 		String sql = "select *  from " + getDbSchemaName()
 				+ "qt_query_instance where query_master_id = ?";
 		List<QtQueryInstance> queryInstanceList = jdbcTemplate.query(sql,
-				new Object[] { queryMasterId }, queryInstanceMapper);
+				new Object[] { Integer.valueOf(queryMasterId) }, queryInstanceMapper);
 		return queryInstanceList;
 	}
 
@@ -131,7 +131,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 						queryInstanceMapper);
 		*/
 		QtQueryInstance queryInstance = (QtQueryInstance) jdbcTemplate
-		.queryForObject(sql, new Object[] { queryInstanceId },
+		.queryForObject(sql, new Object[] { Integer.valueOf(queryInstanceId) },
 				queryInstanceMapper);
 		return queryInstance;
 	}
@@ -185,7 +185,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 					queryInstance.getBatchMode(),
 					queryInstance.getEndDate(),
 					statusTypeId,
-					 queryInstance.getQueryInstanceId() });
+					Integer.valueOf(queryInstance.getQueryInstanceId()) });
 				} else { 
 					//update rest of the fields
 					String sql = "UPDATE "
@@ -198,7 +198,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 						queryInstance.getGroupId(),
 						queryInstance.getBatchMode(),
 						statusTypeId,
-						 queryInstance.getQueryInstanceId() });
+						Integer.valueOf(queryInstance.getQueryInstanceId()) });
 				}
 				return queryInstance;
 			}
@@ -220,7 +220,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 				queryInstance.getEndDate(),
 				statusTypeId,
 				(queryInstance.getMessage() == null) ? "" : queryInstance
-						.getMessage(), queryInstance.getQueryInstanceId() });
+						.getMessage(), Integer.valueOf(queryInstance.getQueryInstanceId()) });
 		} else { 
 			String sql = "UPDATE "
 				+ getDbSchemaName()
@@ -233,7 +233,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 				queryInstance.getBatchMode(),
 				statusTypeId,
 				(queryInstance.getMessage() == null) ? "" : queryInstance
-						.getMessage(), queryInstance.getQueryInstanceId() });
+						.getMessage(), Integer.valueOf(queryInstance.getQueryInstanceId()) });
 		}
 		return queryInstance;
 	}
@@ -312,7 +312,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 		jdbcTemplate.update(sql, new Object[] {
 				
 				(message == null) ? "" : 
-						message, queryInstanceId });
+						message, Integer.valueOf(queryInstanceId) });
 		
 	}
 	
@@ -341,6 +341,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 					+ "(QUERY_INSTANCE_ID, QUERY_MASTER_ID, USER_ID, GROUP_ID,BATCH_MODE,START_DATE,END_DATE,STATUS_TYPE_ID,DELETE_FLAG) "
 					+ "VALUES (?,?,?,?,?,?,?,?,?)";
 				SEQUENCE_POSTGRES = "SELECT NEXTVAL('QT_SQ_QI_QIID')"; 
+                declareParameter(new SqlParameter(Types.INTEGER));
 				return;
 			}
 			
@@ -392,6 +393,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 						queryInstance.getEndDate(),
 						queryInstance.getQtQueryStatusType().getStatusTypeId(),
 						queryInstance.getDeleteFlag() };
+                update(object);
 
 			} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					DAOFactoryHelper.ORACLE)) {
@@ -412,7 +414,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 				queryInstanceId = jdbc.queryForInt(SEQUENCE_POSTGRES);
 				queryInstance.setQueryInstanceId(String
 						.valueOf(queryInstanceId));
-				object = new Object[] { queryInstance.getQueryInstanceId(),
+				object = new Object[] { Integer.valueOf(queryInstance.getQueryInstanceId()),
 						queryInstance.getQtQueryMaster().getQueryMasterId(),
 						queryInstance.getUserId(), 
 						queryInstance.getGroupId(),
