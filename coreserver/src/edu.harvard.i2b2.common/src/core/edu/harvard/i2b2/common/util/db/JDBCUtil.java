@@ -2,13 +2,10 @@ package edu.harvard.i2b2.common.util.db;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-<<<<<<< HEAD
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
-=======
->>>>>>> rc4
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.SQLException;
