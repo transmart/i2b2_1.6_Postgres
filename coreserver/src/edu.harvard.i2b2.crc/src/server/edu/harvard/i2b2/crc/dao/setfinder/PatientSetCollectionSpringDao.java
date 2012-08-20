@@ -64,8 +64,7 @@ public class PatientSetCollectionSpringDao extends CRCDAO implements  IPatientSe
 		if (dataSourceLookup.getServerType().equalsIgnoreCase(DAOFactoryHelper.ORACLE)) { 
 			insert_sql = "insert into " + getDbSchemaName() +"qt_patient_set_collection(patient_set_coll_id,result_instance_id,set_index,patient_num) values ("+getDbSchemaName()+"QT_SQ_QPR_PCID.nextval,?,?,?)"; 
 		} else if (dataSourceLookup.getServerType().equalsIgnoreCase(DAOFactoryHelper.SQLSERVER)) { 
-				(dataSourceLookup.getServerType().equalsIgnoreCase(DAOFactoryHelper.POSTGRES))) { 
-			insert_sql = "insert into " + getDbSchemaName() + "qt_patient_set_collection(result_instance_id,set_index,patient_num) values (?,?,?)";
+						insert_sql = "insert into " + getDbSchemaName() + "qt_patient_set_collection(result_instance_id,set_index,patient_num) values (?,?,?)";
 		} else if(dataSourceLookup.getServerType().equalsIgnoreCase(DAOFactoryHelper.POSTGRES)) {
 			// insert_sql = "insert into " + getDbSchemaName() +"qt_patient_set_collection(patient_set_coll_id,result_instance_id,set_index,patient_num) values ( (select nextval('" +getDbSchemaName()+"QT_SQ_QPR_PCID')),?,?,?)";
 			// smuniraju: This query is hardcoded within POSTGRES block in QueryResultPatientSetGenerator.generateResult()
