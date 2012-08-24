@@ -415,7 +415,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 				queryInstance.setQueryInstanceId(String
 						.valueOf(queryInstanceId));
 				object = new Object[] { Integer.valueOf(queryInstance.getQueryInstanceId()),
-						queryInstance.getQtQueryMaster().getQueryMasterId(),
+						Integer.valueOf(queryInstance.getQtQueryMaster().getQueryMasterId()),
 						queryInstance.getUserId(), 
 						queryInstance.getGroupId(),
 						queryInstance.getBatchMode(),
