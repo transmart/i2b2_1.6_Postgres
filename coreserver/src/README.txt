@@ -1,82 +1,47 @@
-@echo off
-REM i2b2Deploy.bat
-REM -------------------------------------------------------------------
-REM       I2B2 DEPLOY SCRIPT
-REM -------------------------------------------------------------------
+README for Transmart, prostreSQL version.
 
-set CURRENT_DIR= %CD%
-set I2B2_DIR= %3%
+Instructions for building and deploying the i2b2 modules that have been modified 
+to use postgreSQL.
 
-REM -------------------------------------------------------------------
-REM DEPLOY_MODULE=0 Indicates deployment of individual modules
-REM DEPLOY_MODULE=1 Indicates deployment of all modules
-REM -------------------------------------------------------------------
-set DEPLOY_MODULE=0
+Load modules from: github/transmart/i2b2_1.6_Postgres/ 
+In the instructions below BASE_DIR refers to the directory
+i2b2_1.6_Postgres/coreserver/src/
 
-if /I "%2" == "all"  (      
-	set DEPLOY_MODULE=1
-	goto deployAll
-)
-if /I "%2" == "common"     goto deployCommon
-if /I "%2" == "pm"         goto deployPm
-if /I "%2" == "ontology"   goto deployOntology
-if /I "%2" == "crc"        goto deployCrcloader
-if /I "%2" == "workplace"  goto deployWorkplace
-if /I "%2" == "fr"         goto deployFr
-echo Usage: deploy all^|common^|pm^|ontology^|crc^|workplace^|fr directory_name
-goto cmdEnd
+NOTE: if you are building for windows the below steps can
+be achieved by running i2b2Deploy.bat; see the source there for detail.
 
-REM %~dp1
+NOTE: the first two steps (configuration and building i2b2.common)
+must proceed the build of any or all of the modules, but after that
+you may build the module in any order, or choose which modules to build.
 
-:deployAll
-goto deployCommon
+1. set up configuration files
+  In each subdirectory for the modules below, if necessary, edit
+  build.properties to change the location of tomcat, jboss, or
+  the i2b2 war file/dir name.
+  
+2. deploy i2b2.common
+  cd $BASE_DIR/edu.harvard.i2b2.common
+  ant -f build.xml clean dist deploy jboss_pre_deployment_setup
 
-:deployCommon
-call CD%I2B2_DIR%\edu.harvard.i2b2.common
-call ant -f build.xml clean dist deploy jboss_pre_deployment_setup
-echo Deployed module common
-if not %DEPLOY_MODULE% == 1 goto cmdEnd
-goto deployPm
  
-:deployPm
-call CD%I2B2_DIR%\edu.harvard.i2b2.pm
-call ant -f master_build.xml clean build-all deploy
-echo Deployed Module PM
-if not %DEPLOY_MODULE% == 1 goto cmdEnd
-goto deployOntology
+3. deploy Pm module
+  cd $BASE_DIR/edu.harvard.i2b2.pm
+  ant -f master_build.xml clean build-all deploy
 
-:deployOntology
-call CD%I2B2_DIR%\edu.harvard.i2b2.ontology
-call ant -f master_build.xml clean build-all deploy
-echo Deployed Module Ontology
-if not %DEPLOY_MODULE% == 1 goto cmdEnd
-goto deployCrcloader
+4. deploy Ontology module
+  cd $BASE_DIR/edu.harvard.i2b2.ontology
+  ant -f master_build.xml clean build-all deploy
 
-:deployCrcloader
-call CD%I2B2_DIR%\edu.harvard.i2b2.crc.loader
-call ant -f build.xml clean dist
-echo Deployed Crcloader
-goto deployCrc
+5. deploy CRC module
+  cd $BASE_DIR/edu.harvard.i2b2.crc.loader
+  ant -f build.xml clean dist
+  cd $BASE_DIR/edu.harvard.i2b2.crc
+  ant -f master_build.xml clean build-all deploy
 
-:deployCrc
-call CD%I2B2_DIR%\edu.harvard.i2b2.crc
-call ant -f master_build.xml clean build-all deploy
-echo Deployed Module Crc
-if not %DEPLOY_MODULE% == 1 goto cmdEnd
-goto deployWorkplace
+6. deploy Workplace module
+  cd $BASE_DIR/edu.harvard.i2b2.workplace
+  ant -f master_build.xml clean build-all deploy
 
-:deployWorkplace
-call CD%I2B2_DIR%\edu.harvard.i2b2.workplace
-call ant -f master_build.xml clean build-all deploy
-echo Deployed Module Workplace
-if not %DEPLOY_MODULE% == 1 goto cmdEnd
-goto deployFr
-
-:deployFr
-call CD%I2B2_DIR%\edu.harvard.i2b2.fr
-call ant -f master_build.xml clean build-all deploy
-echo Deployed module Fr
-goto cmdEnd
-
-:cmdEnd
-call CD%CURRENT_DIR%  
+7. deploy FR module
+  cd $BASE_DIR/edu.harvard.i2b2.fr
+  ant -f master_build.xml clean build-all deploy
