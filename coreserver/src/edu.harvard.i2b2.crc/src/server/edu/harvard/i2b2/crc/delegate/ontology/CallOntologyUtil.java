@@ -267,7 +267,7 @@ public class CallOntologyUtil {
 		getTermInfo.setSelf(conceptPath);
 		// max="300" hiddens="false" synonyms="false" type="core" blob="true"
 		getTermInfo.setMax(300);
-		getTermInfo.setHiddens(false);
+		getTermInfo.setHiddens(true);
 		getTermInfo.setSynonyms(false);
 		getTermInfo.setType("core");
 		getTermInfo.setBlob(true);
@@ -306,7 +306,7 @@ public class CallOntologyUtil {
 		getChildren.setParent(conceptPath);
 		// max="300" hiddens="false" synonyms="false" type="core" blob="true"
 		// getChildren.setMax(300);
-		getChildren.setHiddens(false);
+		getChildren.setHiddens(true);
 		getChildren.setSynonyms(false);
 		// getChildren.setType("core");
 		getChildren.setBlob(true);
@@ -348,7 +348,7 @@ public class CallOntologyUtil {
 		
 		// max="300" hiddens="false" synonyms="false" type="core" blob="true"
 		// getChildren.setMax(300);
-		modifierInfoType.setHiddens(false);
+		modifierInfoType.setHiddens(true);
 		modifierInfoType.setBlob(true);
 		modifierInfoType.setSynonyms(false);
 

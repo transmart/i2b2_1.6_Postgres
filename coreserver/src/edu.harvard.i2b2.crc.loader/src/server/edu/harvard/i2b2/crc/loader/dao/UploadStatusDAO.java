@@ -527,7 +527,7 @@ public class UploadStatusDAO extends CRCLoaderDAO implements UploadStatusDAOI {
 				DataSourceLookup dataSourceLookup) {
 
 			this.setDataSource(dataSource);
-			 if (dataSourceLookup.getServerType().equalsIgnoreCase(
+			if (dataSourceLookup.getServerType().equalsIgnoreCase(
 							DataSourceLookupDAOFactory.POSTGRES)) {
 				 INSERT_POSTGRES = "INSERT INTO " + schemaName + "upload_status ("
 						+ " upload_id," + " upload_label, " + " user_id, "

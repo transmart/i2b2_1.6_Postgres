@@ -13,6 +13,7 @@ package edu.harvard.i2b2.workplace.ws;
 import edu.harvard.i2b2.common.exception.I2B2Exception;
 import edu.harvard.i2b2.common.util.jaxb.DTOFactory;
 import edu.harvard.i2b2.common.util.jaxb.JAXBUtilException;
+import edu.harvard.i2b2.workplace.datavo.crc.setfinder.query.RequestXmlType;
 import edu.harvard.i2b2.workplace.datavo.i2b2message.ApplicationType;
 import edu.harvard.i2b2.workplace.datavo.i2b2message.BodyType;
 import edu.harvard.i2b2.workplace.datavo.i2b2message.FacilityType;
@@ -103,6 +104,14 @@ public class MessageFactory {
         return bodyType;
     }
 
+    public static BodyType createBodyType(String workplaceData) {
+
+        edu.harvard.i2b2.workplace.datavo.wdo.ObjectFactory of = new edu.harvard.i2b2.workplace.datavo.wdo.ObjectFactory();
+        BodyType bodyType = new BodyType();
+        bodyType.getAny().add(of.createRequestXML(workplaceData));  //  createFolders(workplaceData));
+
+        return bodyType;
+    }
     /**
      * Function to create response  message header based
      * on request message header
@@ -117,7 +126,7 @@ public class MessageFactory {
 
         ApplicationType appType = new ApplicationType();
         appType.setApplicationName("Workplace Cell");
-        appType.setApplicationVersion("1.6");
+        appType.setApplicationVersion("1.601");
         messageHeader.setSendingApplication(appType);
 
         FacilityType facility = new FacilityType();
@@ -242,6 +251,26 @@ public class MessageFactory {
         return respMessageType;
     }
 
+    
+    public static ResponseMessageType createBuildResponseRequestXML(
+            MessageHeaderType messageHeaderType,
+            String folders) {
+            ResponseMessageType respMessageType = null;
+            BodyType bodyType = null;
+            
+            ResponseHeaderType respHeader = createResponseHeader("DONE",
+                    "Workplace processing completed");
+            if(folders != null)
+            	bodyType = createBodyType(folders);
+            
+            else
+            	log.error("creating response with null body type ");
+            
+            respMessageType = createResponseMessageType(messageHeaderType, respHeader,
+                    bodyType);
+            
+            return respMessageType;
+        }
     /**
      * Function to get i2b2 Request message header
      *

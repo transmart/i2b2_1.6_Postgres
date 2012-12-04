@@ -85,7 +85,6 @@ public class PdoQueryConceptDao extends CRCDAO implements IPdoQueryConceptDao {
 
 			String selectClause = conceptFactRelated.getSelectClause();
 			String serverType = dataSourceLookup.getServerType();
-			
 			if (serverType.equalsIgnoreCase(DAOFactoryHelper.ORACLE)) {
 				// get oracle connection from jboss wrapped connection
 				// Otherwise Jboss wrapped connection fails when using oracle
@@ -220,7 +219,6 @@ public class PdoQueryConceptDao extends CRCDAO implements IPdoQueryConceptDao {
 			String selectClause = conceptFactRelated.getSelectClause();
 			String serverType = dataSourceLookup.getServerType();
 			String finalSql = "";
-			
 			if (serverType.equalsIgnoreCase(DAOFactoryHelper.ORACLE)) {
 				finalSql = "Select * from (SELECT "
 						+ " RowNum RowNum, "
@@ -385,7 +383,7 @@ public class PdoQueryConceptDao extends CRCDAO implements IPdoQueryConceptDao {
 					+ "concept_dimension concept where concept_cd in (select distinct char_param1 from "
 					+ tempTable + ") order by concept_path";
 			log.debug("Executing SQL [" + finalSql + "]");
-			System.out.println("Final Sql " + finalSql);
+			
 
 			query = conn.prepareStatement(finalSql);
 
@@ -430,7 +428,7 @@ public class PdoQueryConceptDao extends CRCDAO implements IPdoQueryConceptDao {
 
 		PreparedStatement stmt = conn.prepareStatement(totalSql);
 
-		System.out.println(totalSql + " [ " + sqlParamCount + " ]");
+		log.debug(totalSql + " [ " + sqlParamCount + " ]");
 		if (inputOptionListHandler.isCollectionId()) {
 			for (int i = 1; i <= sqlParamCount; i++) {
 				stmt.setInt(i, Integer.parseInt(inputOptionListHandler

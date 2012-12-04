@@ -16,6 +16,9 @@
         </xs:complexType>
     </xs:element>-->
 
+    <xs:element name="requestXML" type="xs:string"/>
+
+    
     <xs:element name="folders" type="work:foldersType"/>
 
     <xs:complexType name="foldersType">

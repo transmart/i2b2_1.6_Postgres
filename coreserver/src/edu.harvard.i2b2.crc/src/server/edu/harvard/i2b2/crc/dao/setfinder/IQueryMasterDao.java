@@ -51,6 +51,13 @@ public interface IQueryMasterDao {
 	 * @return QtQueryMaster
 	 */
 	public QtQueryMaster getQueryDefinition(String masterId);
+	
+	/**
+	 * Find query by name
+	 * @param queryName
+	 * @return
+	 */
+	public List<QtQueryMaster> getQueryByName(String queryName);
 
 	/**
 	 * Function to rename query master

@@ -136,7 +136,8 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 			
 			for (Iterator<TableAccessType> tableAccess = tableAccessTypeList.iterator(); tableAccess.hasNext();) { 
 				tableAccessType = tableAccess.next();
-				String selectStmt = "select * from " + metadataSchema + tableAccessType.getTableName().trim() + " where c_fullname like ? ";
+				String selectStmt = "select * from " + metadataSchema + tableAccessType.getTableName().trim() + " where c_fullname like ? and c_visualattributes not like 'C%' and c_visualattributes not like 'O%' " +
+						" and c_visualattributes not like 'D%' and c_visualattributes not like 'R%' ";
 				if (synchronizeAllFlag == false) {
 					selectStmt += " and c_totalnum is null ";
 				}
@@ -164,7 +165,7 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 					// call frc
 					log.debug("Begin Setfinder query to CRC [" + cFullName + "]");
 					conceptSkipFlag = false;
-					try { 						
+					try { 
 						masterInstanceResultResponse = crcUtil.callSetfinderQuery("\\\\" + tableAccessType.getTableCd().trim() + cFullName);
 					} catch (Throwable  i2b2Ex) { 
 						log.info("Patient count caught the exception " + i2b2Ex.getMessage());
@@ -187,7 +188,8 @@ public class CRCConceptTotalNumUpdateDao extends JdbcDaoSupport {
 						//update total_num column
 						updatePStmt.setInt(1,totalNum);
 						updatePStmt.setString(2,cFullName);
-						updatePStmt.executeUpdate();						
+						updatePStmt.executeUpdate();
+						
 					}
 				    
 				    //delete the setfinder query

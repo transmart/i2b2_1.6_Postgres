@@ -69,11 +69,13 @@ public class GetChildrenHandler extends RequestHandler {
 
 		List response = null;
 		try {
-			response = conceptDao.findChildrenByParent(getChildrenType, project, this.getDbInfo());
+			response = conceptDao.findChildrenByParent(getChildrenMsg, project, this.getDbInfo());
 		} catch (I2B2DAOException e1) {
 			responseMessageType = MessageFactory.doBuildErrorResponse(getChildrenMsg.getMessageHeaderType(), "Database error");
 		} catch (I2B2Exception e1) {
 			responseMessageType = MessageFactory.doBuildErrorResponse(getChildrenMsg.getMessageHeaderType(), "Database error");
+		} catch(JAXBUtilException e1){
+			responseMessageType = MessageFactory.doBuildErrorResponse(getChildrenMsg.getMessageHeaderType(), "Incoming request message error");
 		}
 		// no errors found 
 		if(responseMessageType == null) {
@@ -116,7 +118,7 @@ public class GetChildrenHandler extends RequestHandler {
 				responseMessageType = MessageFactory.createBuildResponse(messageHeader,concepts);
 			}     
 		}
-        String responseVdo = null;
+        String responseVdo = null; 
         responseVdo = MessageFactory.convertToXMLString(responseMessageType);
 		return responseVdo;
 	}

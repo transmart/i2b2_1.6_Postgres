@@ -58,6 +58,8 @@ public class WorkplaceUtil {
     /** property name for PM endpoint reference **/
     private static final String PM_WS_EPR = "workplace.ws.pm.url";
     
+    private static  String CRC_WS_EPR = "";
+    
     /** property name for PM webserver method **/
     private static final String PM_WS_METHOD = "workplace.ws.pm.webServiceMethod";
 
@@ -157,6 +159,16 @@ public class WorkplaceUtil {
      */
     public String getPmEndpointReference() throws I2B2Exception {
         return getPropertyValue(PM_WS_EPR).trim();
+    }
+
+    
+    public void setCRCEndpointReference(String s)  {
+         CRC_WS_EPR = s;
+    }
+
+    
+    public String getCRCUrl() throws I2B2Exception {
+        return CRC_WS_EPR;
     }
 
     /**

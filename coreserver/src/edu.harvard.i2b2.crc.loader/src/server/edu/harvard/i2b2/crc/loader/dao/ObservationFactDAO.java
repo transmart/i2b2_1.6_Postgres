@@ -388,10 +388,10 @@ public class ObservationFactDAO extends CRCLoaderDAO implements
 							: null,
 					// observationFactMap.get("modifier_cd"),
 					(observationType.getModifierCd() != null) ? observationType
-							.getModifierCd().getValue() : null,
+							.getModifierCd().getValue() : "@",
 					(observationType.getInstanceNum() != null) ? observationType
 							.getInstanceNum().getValue()
-							: null,
+							: 1,
 					// observationFactMap.get("valtype_cd"),
 					observationType.getValuetypeCd(),
 					// observationFactMap.get("tval_char"),

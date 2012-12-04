@@ -180,7 +180,7 @@ public class GetCodeInfoDao extends JdbcDaoSupport {
 					entry.setTablename(rs.getString("c_tablename")); 
 					entry.setColumnname(rs.getString("c_columnname")); 
 					entry.setColumndatatype(rs.getString("c_columndatatype")); 
-					entry.setOperator(rs.getString("c_operator"));
+					entry.setOperator(rs.getString("c_operator")); 
 					entry.setDimcode(rs.getString("c_dimcode"));
 					entry.setTooltip(rs.getString("c_tooltip"));
 

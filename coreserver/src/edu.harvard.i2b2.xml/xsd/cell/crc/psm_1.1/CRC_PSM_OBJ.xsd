@@ -53,8 +53,8 @@
     <xs:simpleType name="xml_result_idType">
         <xs:restriction base="xs:string"/>
     </xs:simpleType>
-    <xs:simpleType name="set_sizeType">
-        <xs:restriction base="xs:int"/>
+    <xs:simpleType name="set_sizeType" >
+        <xs:restriction base="xs:int"  />
     </xs:simpleType>
     <xs:simpleType name="set_indexType">
         <xs:restriction base="xs:int"/>
@@ -191,7 +191,7 @@
             </xs:choice>
             -->
             <xs:element name="query_result_type" type="crc:query_result_typeType"/>
-            <xs:element name="set_size" type="crc:set_sizeType"/>
+            <xs:element name="set_size" type="crc:set_sizeType" default="-1"/>
             <xs:element name="obfuscate_method" type="xs:string"/>
             <xs:element name="start_date" type="crc:start_dateType"/>
             <xs:element name="end_date" type="crc:end_dateType"/>

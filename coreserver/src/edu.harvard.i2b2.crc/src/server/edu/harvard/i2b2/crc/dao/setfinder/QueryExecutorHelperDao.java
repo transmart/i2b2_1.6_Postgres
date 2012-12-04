@@ -64,7 +64,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 	private static String defaultResultType = null;
 	private String processTimingFlag = ProcessTimingReportUtil.NONE;
 	private ProcessTimingReportUtil ptrUtil = null;
-	
+	private boolean queryWithoutTempTableFlag = false;
 	
 	static {
 		QueryProcessorUtil qpUtil = QueryProcessorUtil.getInstance();
@@ -91,6 +91,10 @@ public class QueryExecutorHelperDao extends CRCDAO {
 		} catch (I2B2DAOException e) {
 			log.error("Error trying to construct ProcessTimingReportUtil" + e.getMessage());
 		}
+	}
+	
+	public void setQueryWithoutTempTableFlag(boolean queryWithoutTempTableFlag) { 
+		this.queryWithoutTempTableFlag = queryWithoutTempTableFlag;
 	}
 	
 
@@ -229,23 +233,27 @@ public class QueryExecutorHelperDao extends CRCDAO {
 				clearTempStmt.close();
 
 				String createSql = "CREATE  TABLE " + TEMP_TABLE + " ( "
-						+ " ENCOUNTER_NUM int, " + " PATIENT_NUM int, INSTANCE_NUM int,"
+						+ " ENCOUNTER_NUM int, " + " PATIENT_NUM int, INSTANCE_NUM int, CONCEPT_CD varchar(50), START_DATE DATETIME, PROVIDER_ID varchar(50), "
 						+ " PANEL_COUNT int, " + " fact_count int, "
 						+ " fact_panels int " + " )";
 
 				stmt.executeUpdate(createSql);
 				createSql = " CREATE  TABLE " + TEMP_DX_TABLE + "  ( "
-						+ " ENCOUNTER_NUM int, " + " PATIENT_NUM int, INSTANCE_NUM int " + " ) ";
+						+ " ENCOUNTER_NUM int, " + " PATIENT_NUM int, INSTANCE_NUM int, CONCEPT_CD varchar(50), START_DATE DATETIME, PROVIDER_ID varchar(50) ) ";
 				stmt.executeUpdate(createSql);
 				createSql = " CREATE  TABLE " + TEMP_MASTER_TABLE + "  ( "
-				+ " ENCOUNTER_NUM int,  PATIENT_NUM int , INSTANCE_NUM int, MASTER_ID varchar(50), LEVEL_NO int ) ";
+				+ " ENCOUNTER_NUM int,  PATIENT_NUM int , INSTANCE_NUM int, CONCEPT_CD varchar(50), START_DATE DATETIME, PROVIDER_ID varchar(50), MASTER_ID varchar(50), LEVEL_NO int ) ";
 				stmt.executeUpdate(createSql);
 		
-				String indexSql = "create index tempIndex on "
+				if (dsLookup.getServerType().equalsIgnoreCase(
+						DAOFactoryHelper.SQLSERVER)) {
+					String indexSql = "create index tempIndex on "
 							+ this.getDbSchemaName()
-							+ "#global_temp_table (patient_num,panel_count)";
-				log.debug("Executing sql [ " + indexSql + " ]");
-				stmt.executeUpdate(indexSql);
+							+ "#global_temp_table (patient_num,encounter_num,panel_count)";
+					log.debug("Executing sql [ " + indexSql + " ]");
+					stmt.executeUpdate(indexSql);
+
+				}
 
 			} else if (dsLookup.getServerType().equalsIgnoreCase(
 					DAOFactoryHelper.ORACLE)) {
@@ -279,8 +287,13 @@ public class QueryExecutorHelperDao extends CRCDAO {
 			csrThread.start();
 
 			// ut.commit();
-			String[] sqls = generatedSql.split("<\\*>");
-
+			String[] sqls = null; 
+			if (this.queryWithoutTempTableFlag == false) { 
+				sqls = generatedSql.split("<\\*>");
+			} else { 
+				sqls = new String[] {generatedSql};
+			}
+			
 			// UserTransaction could not be used here because it needs a
 			// XA datasource.
 			try {
@@ -294,6 +307,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 			LogTimingUtil logTimingUtil = new LogTimingUtil();
 			LogTimingUtil outerLogTimingUtil = new LogTimingUtil();
 			outerLogTimingUtil.setStartTime();
+			
 			// execute generated sql
 			while (count < sqls.length) {
 				singleSql = sqls[count++];
@@ -301,21 +315,26 @@ public class QueryExecutorHelperDao extends CRCDAO {
 					log.debug("Executing setfinder query sql [" + singleSql + "]"
 							+ " for query instance= " + queryInstanceId);
 					logTimingUtil.setStartTime();
-					int rows = stmt.executeUpdate(singleSql);
-					logTimingUtil.setEndTime();
-					log
-							.debug("Rows affected [" + rows
-									+ "] for query instance");
-					// if the database is sqlserver, then updating the temp
-					// table statistics speed up the query
-					if (this.dataSourceLookup.getServerType().equalsIgnoreCase(
-							DAOFactoryHelper.SQLSERVER)) {
-						log.debug("UPDATE STATISTICS " + this.getDbSchemaName()
-								+ "#global_temp_table ");
-						stmt.executeUpdate("UPDATE STATISTICS "
-								+ this.getDbSchemaName()
-								+ "#global_temp_table ");
+					if (this.queryWithoutTempTableFlag == false) { 
+						int rows = stmt.executeUpdate(singleSql);
+						log.debug("Rows affected [" + rows + "] for query instance");
+						// if the database is sqlserver, then updating the temp
+						// table statistics speed up the query
+						if (this.dataSourceLookup.getServerType().equalsIgnoreCase(
+								DAOFactoryHelper.SQLSERVER)) {
+							log.debug("UPDATE STATISTICS " + this.getDbSchemaName()
+									+ "#global_temp_table ");
+							stmt.executeUpdate("UPDATE STATISTICS "
+									+ this.getDbSchemaName()
+									+ "#global_temp_table ");
+						}
+					} else { 
+						resultSet = stmt.executeQuery(singleSql);
+						
 					}
+					logTimingUtil.setEndTime();
+					
+					
 					
 					//log the time to the query instance
 					if (this.processTimingFlag.equalsIgnoreCase(ProcessTimingReportUtil.DEBUG)) {
@@ -323,6 +342,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 					}
 				}
 			}
+			
 			outerLogTimingUtil.setEndTime();
 			long endTime = System.currentTimeMillis();
 			long totalTime = endTime - startTime;
@@ -341,14 +361,19 @@ public class QueryExecutorHelperDao extends CRCDAO {
 			String fetchSql = " select count(distinct patient_num) as patient_num_count from "
 					+ TEMP_DX_TABLE;
 			Statement countStmt = manualConnection.createStatement();
-			resultSet = countStmt.executeQuery(fetchSql);
+			if (this.queryWithoutTempTableFlag == false) { 
+				resultSet = countStmt.executeQuery(fetchSql);
+			}
+			
 			int i = 0;
-
+			//read count sigma from property file
+			double countSigma = GaussianBoxMuller.getCountSigma();
+			double obfuscatedMinimumValue = GaussianBoxMuller.getObfuscatedMinimumVal();
 			while (resultSet.next() && (i++ < 10)) {
 				recordCount = resultSet.getInt("patient_num_count");
 				GaussianBoxMuller gaussianBoxMuller = new GaussianBoxMuller();
 				obfuscatedRecordCount = (int) gaussianBoxMuller
-						.getNormalizedValueForCount(recordCount);
+						.getNormalizedValueForCount(recordCount,countSigma,obfuscatedMinimumValue);
 				
 				log.debug("Calculated Patient set size :[" + recordCount
 						+ "] for query instance= " + queryInstanceId);
@@ -360,7 +385,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 			// call the result generator with the db connection/temp table
 			callResultGenerator(resultOutputList, manualConnection,
 					sfDAOFactory, requestXml, patientSetId, queryInstanceId,
-					TEMP_DX_TABLE, obfuscatedRecordCount, transactionTimeout, tm);
+					TEMP_DX_TABLE, recordCount, obfuscatedRecordCount, transactionTimeout, tm);
 
 			// delete temp table
 			String deleteGlobalTempTable = "";
@@ -373,7 +398,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 				deleteCountTable = "drop table " + TEMP_DX_TABLE;
 				deleteMasterTable = "drop table " + TEMP_MASTER_TABLE;
 			} else if (dsLookup.getServerType().equalsIgnoreCase(
-					DAOFactoryHelper.ORACLE) ) {
+					DAOFactoryHelper.ORACLE)) {
 				deleteGlobalTempTable = "delete from " + TEMP_TABLE;
 				deleteCountTable = "delete from " + TEMP_DX_TABLE;
 				deleteMasterTable = "delete from " + TEMP_MASTER_TABLE;
@@ -584,7 +609,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 				.getResultInstanceList(queryInstanceId);
 		for (QtQueryResultInstance queryResultInstance : resultInstanceList) {
 			queryResultInstanceDao.updatePatientSet(queryResultInstance
-					.getResultInstanceId(), statusTypeId, message, 0, 0, "");
+					.getResultInstanceId(), statusTypeId, message, -1, -1, "");
 		}
 
 	}
@@ -594,7 +619,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 			ResultOutputOptionListType resultOutputList,
 			Connection manualConnection, SetFinderDAOFactory sfDAOFactory,
 			String requestXml, String patientSetId, String queryInstanceId,
-			String TEMP_DX_TABLE, int obfuscatedRecordCount, int transactionTimeout, TransactionManager tm)
+			String TEMP_DX_TABLE, int recordCount, int obfuscatedRecordCount, int transactionTimeout, TransactionManager tm)
 			throws CRCTimeOutException, LockedoutException, I2B2DAOException {
 
 		QueryProcessorUtil qpUtil = QueryProcessorUtil.getInstance();
@@ -634,7 +659,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 		} catch (I2B2Exception e) {
 			throw new I2B2DAOException(e.getMessage());
 		}
-		int lockoutQueryCount = -1, lockoutQueryDay = -1;
+		int lockoutQueryCount = -1, lockoutQueryDay = -1, lockoutQueryZeroCount = -1;
 		boolean dataObfuscFlag = false;
 		try {
 			DataSourceLookup dataSourceLookup = sfDAOFactory
@@ -680,6 +705,14 @@ public class QueryExecutorHelperDao extends CRCDAO {
 			if (lockoutQueryDayStr != null) {
 				lockoutQueryDay = Integer.parseInt(lockoutQueryDayStr);
 			}
+			String lockoutQueryZeroCountStr = null;
+			
+			lockoutQueryZeroCountStr = qpUtil
+					.getCRCPropertyValue("edu.harvard.i2b2.crc.lockout.setfinderquery.zero.count");
+			if (lockoutQueryZeroCountStr != null) {
+				lockoutQueryZeroCount = Integer.parseInt(lockoutQueryZeroCountStr);
+			}
+			
 		} catch (I2B2Exception e) {
 			throw new I2B2DAOException(e.getMessage());
 		}
@@ -699,6 +732,8 @@ public class QueryExecutorHelperDao extends CRCDAO {
 		param.put("TransactionManager", tm);
 		param.put("ProcessTimingFlag", processTimingFlag);
 		param.put("ObfuscatedRecordCount", obfuscatedRecordCount);
+		param.put("RecordCount", recordCount);
+		param.put("ObfuscatedRoleFlag", dataObfuscFlag);
 
 		if (resultOutputList != null) {
 			if (resultOutputList.getResultOutput() != null
@@ -716,21 +751,27 @@ public class QueryExecutorHelperDao extends CRCDAO {
 					// running the result
 					runGenerator(resultName, param);
 					// check if the user need to be locked
-					// resultInstanceId, userId
-					if (dataObfuscFlag) {
-						String userLockedDate = null;
-						try {
-							userLockedDate = processUserLock(sfDAOFactory,
-									requestXml, resultInstanceId,
-									lockoutQueryCount, lockoutQueryDay);
-						} catch (I2B2Exception e) {
-							throw new I2B2DAOException(e.getMessage());
+					// if the lockoutQueryCount = -1 skip lockout check
+					if (lockoutQueryCount>-1) {
+						// resultInstanceId, userId
+						if (dataObfuscFlag) {
+							String userLockedDate = null;
+							try {
+								userLockedDate = processUserLock(sfDAOFactory,
+										requestXml, resultInstanceId,
+										lockoutQueryCount, lockoutQueryDay,lockoutQueryZeroCount);
+							} catch (I2B2Exception e) {
+								throw new I2B2DAOException(e.getMessage());
+							}
+							if (userLockedDate != null) {
+								throw new LockedoutException(EJBPMUtil.LOCKEDOUT
+										+ " error : User account locked on ["
+										+ userLockedDate + "]");
+							}
 						}
-						if (userLockedDate != null) {
-							throw new LockedoutException(EJBPMUtil.LOCKEDOUT
-									+ " error : User account locked on ["
-									+ userLockedDate + "]");
-						}
+					} else {
+						log.debug("Setfinder not doing the lockout check for instance ["+ queryInstanceId + "] " +
+								"the property value of query count is -1");
 					}
 				}
 			} else {
@@ -745,18 +786,28 @@ public class QueryExecutorHelperDao extends CRCDAO {
 					queryInstanceId, defaultResultType);
 			param.put("ResultInstanceId", resultInstanceId);
 			runGenerator(resultType, param);
-			// do the check if the user need to be locked
-			String userLockedDate = null;
-			try {
-				userLockedDate = processUserLock(sfDAOFactory, requestXml,
-						resultInstanceId, lockoutQueryCount, lockoutQueryDay);
-			} catch (I2B2Exception e) {
-				throw new I2B2DAOException(e.getMessage());
-			}
-			if (userLockedDate != null) {
-				throw new LockedoutException(EJBPMUtil.LOCKEDOUT
-						+ " error : User account locked on [" + userLockedDate
-						+ "]");
+			// check if the user need to be locked
+			// if the lockoutQueryCount = -1 skip lockout check
+			if (lockoutQueryCount>-1) {
+				// resultInstanceId, userId
+				if (dataObfuscFlag) {
+					// do the check if the user need to be locked
+					String userLockedDate = null;
+					try {
+						userLockedDate = processUserLock(sfDAOFactory, requestXml,
+								resultInstanceId, lockoutQueryCount, lockoutQueryDay,lockoutQueryZeroCount);
+					} catch (I2B2Exception e) {
+						throw new I2B2DAOException(e.getMessage());
+					}
+					if (userLockedDate != null) {
+						throw new LockedoutException(EJBPMUtil.LOCKEDOUT
+								+ " error : User account locked on [" + userLockedDate
+								+ "]");
+					}
+				}
+			} else {
+					log.debug("Setfinder not doing the lockout check for instance ["+ queryInstanceId + "] " +
+							"the property value of query count is -1");
 			}
 		}
 	}
@@ -808,7 +859,7 @@ public class QueryExecutorHelperDao extends CRCDAO {
 
 	private String processUserLock(SetFinderDAOFactory sfDAOFactory,
 			String requestXml, String resultInstanceId, int lockoutQueryCount,
-			int lockoutQueryDay) throws I2B2Exception {
+			int lockoutQueryDay, int lockoutQueryZeroCount) throws I2B2Exception {
 		String userLockedDate = null;
 
 		I2B2RequestMessageHelper reqMsgHelper = new I2B2RequestMessageHelper(
@@ -824,8 +875,18 @@ public class QueryExecutorHelperDao extends CRCDAO {
 		int resultTypeId = resultInstance.getQtQueryResultType()
 				.getResultTypeId();
 		int setSize = resultInstance.getRealSetSize();
-		if (setSize == 0) {
-			return userLockedDate;
+		//if the lockout query zero count is -1, dont count zero
+		if (setSize == 0 ) {
+			if (lockoutQueryZeroCount == -1) {
+				log.debug("Setfinder not doing the lockout check for result instance ["+ resultInstanceId + "] " +
+						"the zero count property value is -1");
+				return userLockedDate;
+			} else { 
+				//assign the lockout query zero count to lockout query count
+				log.debug("Setfinder lockout query count value for result instance ["+ resultInstanceId + "] " +
+						"taken from zero count property value is ["+lockoutQueryZeroCount +"]");
+				lockoutQueryCount = lockoutQueryZeroCount;
+			}
 		}
 		int queryCount = queryResultInstanceDao
 				.getResultInstanceCountBySetSize(userId, lockoutQueryDay,

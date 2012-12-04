@@ -188,7 +188,7 @@ public class QueryRequestDelegate extends RequestHandlerDelegate {
 			}
 
 			// check if the role is DATA_AGG to proceed
-
+			boolean errorFlag = false;
 			JAXBUnWrapHelper unWrapHelper = new JAXBUnWrapHelper();
 			headerType = (PsmQryHeaderType) unWrapHelper
 					.getObjectByClass(
@@ -208,13 +208,12 @@ public class QueryRequestDelegate extends RequestHandlerDelegate {
 							PsmRequestTypeType.CRC_QRY_GET_QUERY_MASTER_LIST_FROM_GROUP_ID)) {
 				// check if user have right permission to access this request
 				if (projectType != null && projectType.getRole().size() > 0) {
-					if ((!projectType.getRole().contains("ADMIN"))
-							&& (!projectType.getRole().contains("MANAGER"))) {
+					if ((!projectType.getRole().contains("MANAGER"))) {
 						// Not authorized
 						procStatus = new StatusType();
 						procStatus.setType("ERROR");
 						procStatus
-								.setValue("Authorization failure, should have ADMIN or  role");
+								.setValue("Authorization failure, should have MANAGER  role");
 						response = I2B2MessageResponseFactory
 								.buildResponseMessage(requestXml, procStatus,
 										bodyType);
@@ -225,7 +224,7 @@ public class QueryRequestDelegate extends RequestHandlerDelegate {
 					procStatus = new StatusType();
 					procStatus.setType("ERROR");
 					procStatus
-							.setValue("Authorization failure, should have Admin role");
+							.setValue("Authorization failure, should have MANAGER role");
 					response = I2B2MessageResponseFactory.buildResponseMessage(
 							requestXml, procStatus, bodyType);
 					return response;
@@ -273,6 +272,11 @@ public class QueryRequestDelegate extends RequestHandlerDelegate {
 										responseBodyType);
 						return response;
 					}
+					
+					//if (handler.getErrorFlag()) { 
+					//	errorFlag = true;
+					//}
+					
 				}
 			} else if (headerType
 					.getRequestType()
@@ -351,9 +355,15 @@ public class QueryRequestDelegate extends RequestHandlerDelegate {
 						requestXml);
 				responseBodyType = handler.execute();
 			}
+			
 			procStatus = new StatusType();
-			procStatus.setType("DONE");
-			procStatus.setValue("DONE");
+			if (errorFlag == false) { 
+				procStatus.setType("DONE");
+				procStatus.setValue("DONE");
+			} else { 
+				procStatus.setType("ERROR");
+				procStatus.setValue("ERROR");
+			}
 
 			response = I2B2MessageResponseFactory.buildResponseMessage(
 					requestXml, procStatus, responseBodyType);

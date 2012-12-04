@@ -38,39 +38,28 @@ public class QueryResultPatientCountGenerator extends CRCDAO implements
 		String resultInstanceId = (String) param.get("ResultInstanceId");
 		List<String> roles = (List<String>) param.get("Roles");
 		int obfucatedRecordCount = (Integer) param.get("ObfuscatedRecordCount");
+		int recordCount = (Integer) param.get("RecordCount");
 		String resultTypeName = (String) param.get("ResultOptionName");
-		this
-				.setDbSchemaName(sfDAOFactory.getDataSourceLookup()
-						.getFullSchema());
+		Boolean queryWithoutTempTableFlag = (Boolean) param
+				.get("QueryWithoutTempTableFlag");
+		boolean dataObfusRole = (Boolean)param.get("ObfuscatedRoleFlag");
+		
+		this.setDbSchemaName(sfDAOFactory.getDataSourceLookup().getFullSchema());
 
-		String demographics_count_sql = "select count(distinct patient_num) as patient_count from "
-				+ TEMP_DX_TABLE;
 		boolean errorFlag = false;
 		int patientCount = 0, realPatientCount = 0;
-		boolean dataObfusRole = false;
+		
 		try {
-			System.out.println(demographics_count_sql);
-			Statement stmt = sfConn.createStatement();
-			ResultSet resultSet = stmt.executeQuery(demographics_count_sql);
-			resultSet.next();
-			patientCount = resultSet.getInt("patient_count");
-			realPatientCount = patientCount;
-			stmt.close();
 
-			// check for the user role to see if it needs data obfscation
-			DataSourceLookup originalDataSource = sfDAOFactory
-					.getOriginalDataSourceLookup();
-
-			dataObfusRole = checkDataObscRole(originalDataSource, roles);
-
-			if (dataObfusRole) {
-
-				GaussianBoxMuller gaussianBoxMuller = new GaussianBoxMuller();
-				patientCount = (int) gaussianBoxMuller
-						.getNormalizedValueForCount(patientCount);
-			} else { 
-				obfucatedRecordCount = patientCount;
-			}
+				if (dataObfusRole) {
+					patientCount = obfucatedRecordCount;
+					realPatientCount = recordCount;
+				} else {
+					patientCount = recordCount;
+					realPatientCount = recordCount;
+					obfucatedRecordCount = recordCount;
+				}
+			
 			int i = 0;
 			ResultType resultType = new ResultType();
 			resultType.setName("PATIENT_COUNT_XML");
@@ -94,11 +83,12 @@ public class QueryResultPatientCountGenerator extends CRCDAO implements
 					strWriter);
 
 			IXmlResultDao xmlResultDao = sfDAOFactory.getXmlResultDao();
-			xmlResultDao.createQueryXmlResult(resultInstanceId, strWriter
-					.toString());
+			xmlResultDao.createQueryXmlResult(resultInstanceId,
+					strWriter.toString());
 		} catch (Exception sqlEx) {
-			log.error("QueryResultPatientSetGenerator.generateResult:"
-					+ sqlEx.getMessage(), sqlEx);
+			log.error(
+					"QueryResultPatientSetGenerator.generateResult:"
+							+ sqlEx.getMessage(), sqlEx);
 			throw new I2B2DAOException(
 					"QueryResultPatientSetGenerator.generateResult:"
 							+ sqlEx.getMessage(), sqlEx);
@@ -116,18 +106,24 @@ public class QueryResultPatientCountGenerator extends CRCDAO implements
 					// add () to the result type description
 					// read the description from result type
 				}
-			
-				
+
 				IQueryResultTypeDao resultTypeDao = sfDAOFactory
-				.getQueryResultTypeDao();
+						.getQueryResultTypeDao();
 				List<QtQueryResultType> resultTypeList = resultTypeDao
-				.getQueryResultTypeByName(resultTypeName);
-				
-				String queryName = sfDAOFactory.getQueryMasterDAO().getQueryDefinition(
-				sfDAOFactory.getQueryInstanceDAO().getQueryInstanceByInstanceId(queryInstanceId).getQtQueryMaster().getQueryMasterId()).getName();
-				description = resultTypeList.get(0)
-				.getDescription() + " for \"" + queryName +"\"";
-				
+						.getQueryResultTypeByName(resultTypeName);
+
+				String queryName = sfDAOFactory
+						.getQueryMasterDAO()
+						.getQueryDefinition(
+								sfDAOFactory
+										.getQueryInstanceDAO()
+										.getQueryInstanceByInstanceId(
+												queryInstanceId)
+										.getQtQueryMaster().getQueryMasterId())
+						.getName();
+				description = resultTypeList.get(0).getDescription()
+						+ " for \"" + queryName + "\"";
+
 				resultInstanceDao.updatePatientSet(resultInstanceId,
 						QueryStatusTypeId.STATUSTYPE_ID_FINISHED, "",
 						obfucatedRecordCount, realPatientCount, obfusMethod);
@@ -138,42 +134,5 @@ public class QueryResultPatientCountGenerator extends CRCDAO implements
 		}
 	}
 
-	private boolean checkDataObscRole(
-			DataSourceLookup originalDataSourceLookup, List<String> roles)
-			throws I2B2Exception {
-		boolean noDataAggFlag = false, noDataObfscFlag = false;
-
-		String domainId = originalDataSourceLookup.getDomainId();
-		String projectId = originalDataSourceLookup.getProjectPath();
-		String userId = originalDataSourceLookup.getOwnerId();
-
-		DAOFactoryHelper helper = new DAOFactoryHelper(domainId, projectId,
-				userId);
-
-		IDAOFactory daoFactory = helper.getDAOFactory();
-		AuthrizationHelper authHelper = new AuthrizationHelper(domainId,
-				projectId, userId, daoFactory);
-
-		try {
-			authHelper.checkRoleForProtectionLabel(
-					"SETFINDER_QRY_WITHOUT_DATAOBFSC", roles);
-		} catch (MissingRoleException noRoleEx) {
-			noDataAggFlag = true;
-		} catch (I2B2Exception e) {
-			throw e;
-		}
-		try {
-			authHelper.checkRoleForProtectionLabel(
-					"SETFINDER_QRY_WITH_DATAOBFSC", roles);
-		} catch (MissingRoleException noRoleEx) {
-			noDataObfscFlag = true;
-		} catch (I2B2Exception e) {
-			throw e;
-		}
-		if (noDataAggFlag && !noDataObfscFlag) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+	
 }

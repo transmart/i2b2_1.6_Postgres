@@ -29,7 +29,7 @@ public class DataSourceLookupDAOFactory {
 	public static DataSourceLookupDAO getDataSourceLookupDAO()
 			throws I2B2DAOException {
 		if (serverType == null) { 
-		getLookupDataSourceFromPropertyFile();
+		    getLookupDataSourceFromPropertyFile();
 		}
 		if (serverType.equalsIgnoreCase(POSTGRES)) {
 			return new OracleDataSourceLookupDAO(lookupDataSource, schemaName);

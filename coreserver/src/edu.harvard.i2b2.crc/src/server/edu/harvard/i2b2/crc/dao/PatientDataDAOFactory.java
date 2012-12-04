@@ -1,5 +1,8 @@
 package edu.harvard.i2b2.crc.dao;
 
+import javax.sql.DataSource;
+
+import edu.harvard.i2b2.crc.dao.pdo.IMetadataDao;
 import edu.harvard.i2b2.crc.dao.pdo.IObservationFactDao;
 import edu.harvard.i2b2.crc.dao.pdo.IPageDao;
 import edu.harvard.i2b2.crc.dao.pdo.IPdoQueryConceptDao;
@@ -44,8 +47,12 @@ public interface PatientDataDAOFactory {
 	public IPdoQueryPidDao getPdoQueryPidDAO();
 
 	public IPdoQueryEidDao getPdoQueryEidDAO();
+	
+	public IMetadataDao getMetadataDAO();
 
 	public DataSourceLookup getDataSourceLookup();
 
 	public DataSourceLookup getOriginalDataSourceLookup();
+	
+	public DataSource getDataSource();
 }

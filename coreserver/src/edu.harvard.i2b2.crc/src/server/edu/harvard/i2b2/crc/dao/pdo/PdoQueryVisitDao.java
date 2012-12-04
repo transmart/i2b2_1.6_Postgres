@@ -36,6 +36,7 @@ import edu.harvard.i2b2.crc.dao.pdo.output.VisitFactRelated;
 import edu.harvard.i2b2.crc.datavo.db.DataSourceLookup;
 import edu.harvard.i2b2.crc.datavo.pdo.EventSet;
 import edu.harvard.i2b2.crc.datavo.pdo.EventType;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.EventListType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.PatientListType;
 
@@ -48,12 +49,17 @@ import edu.harvard.i2b2.crc.datavo.pdo.query.PatientListType;
 public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 
 	private DataSourceLookup dataSourceLookup = null;
+	private List<ParamType> metaDataParamList = null;
 
 	public PdoQueryVisitDao(DataSourceLookup dataSourceLookup,
 			DataSource dataSource) {
 		setDbSchemaName(dataSourceLookup.getFullSchema());
 		setDataSource(dataSource);
 		this.dataSourceLookup = dataSourceLookup;
+	}
+	
+	public void setMetaDataParamList(List<ParamType> metaDataParamList) { 
+		this.metaDataParamList = metaDataParamList; 
 	}
 
 	/**
@@ -76,6 +82,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 			conn = getDataSource().getConnection();
 			VisitFactRelated visitRelated = new VisitFactRelated(
 					buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+			visitRelated.setMetaDataParamList(this.metaDataParamList);
 			String selectClause = visitRelated.getSelectClause();
 			String serverType = dataSourceLookup.getServerType();
 			if (serverType.equalsIgnoreCase(DAOFactoryHelper.ORACLE)) {
@@ -145,7 +152,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 					detailFlag, blobFlag, statusFlag);
 			while (resultSet.next()) {
 				EventType visitDimensionType = eventBuilder
-						.buildEventSet(resultSet);
+						.buildEventSet(resultSet,this.metaDataParamList);
 				visitDimensionSet.getEvent().add(visitDimensionType);
 			}
 
@@ -192,6 +199,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 		String inSqlClause = visitListTypeHandler.generateWhereClauseSql();
 		VisitFactRelated visitRelated = new VisitFactRelated(
 				buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+		visitRelated.setMetaDataParamList(this.metaDataParamList);
 		String selectClause = visitRelated.getSelectClause();
 
 		String mainSqlString = " SELECT " + selectClause + "  FROM "
@@ -231,7 +239,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 				// VisitDimensionType visitDimensionType =
 				// getVisitDimensionType(resultSet);
 				EventType visitDimensionType = eventBuilder
-						.buildEventSet(resultSet);
+						.buildEventSet(resultSet, metaDataParamList);
 				visitDimensionSet.getEvent().add(visitDimensionType);
 			}
 		} catch (SQLException sqlEx) {
@@ -275,6 +283,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 
 		VisitFactRelated visitRelated = new VisitFactRelated(
 				buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+		visitRelated.setMetaDataParamList(this.metaDataParamList);
 		String selectClause = visitRelated.getSelectClause();
 		String mainSqlString = " SELECT " + selectClause + "  FROM "
 				+ getDbSchemaName()
@@ -314,7 +323,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 				// VisitDimensionType visitDimensionType =
 				// getVisitDimensionType(resultSet);
 				EventType visitDimensionType = eventBuilder
-						.buildEventSet(resultSet);
+						.buildEventSet(resultSet,this.metaDataParamList);
 				visitDimensionSet.getEvent().add(visitDimensionType);
 			}
 
@@ -389,6 +398,8 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 				detailFlag, blobFlag, statusFlag);
 		VisitFactRelated eventFactRelated = new VisitFactRelated(
 				buildOutputOptionType(detailFlag, blobFlag, statusFlag));
+		eventFactRelated.setMetaDataParamList(this.metaDataParamList);
+		
 		String selectClause = eventFactRelated.getSelectClause();
 		String serverType = dataSourceLookup.getServerType();
 		String factTempTable = "";
@@ -469,7 +480,7 @@ public class PdoQueryVisitDao extends CRCDAO implements IPdoQueryVisitDao {
 			resultSet = query.executeQuery();
 
 			while (resultSet.next()) {
-				EventType event = eventBuilder.buildEventSet(resultSet);
+				EventType event = eventBuilder.buildEventSet(resultSet,this.metaDataParamList);
 				eventSet.getEvent().add(event);
 			}
 		} catch (SQLException sqlEx) {

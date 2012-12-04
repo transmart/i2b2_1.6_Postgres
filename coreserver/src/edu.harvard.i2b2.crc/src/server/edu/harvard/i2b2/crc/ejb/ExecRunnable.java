@@ -26,6 +26,7 @@ import edu.harvard.i2b2.crc.dao.DAOFactoryHelper;
 import edu.harvard.i2b2.crc.dao.IDAOFactory;
 import edu.harvard.i2b2.crc.dao.SetFinderDAOFactory;
 import edu.harvard.i2b2.crc.dao.setfinder.CRCTimeOutException;
+import edu.harvard.i2b2.crc.dao.setfinder.CheckSkipTempTable;
 import edu.harvard.i2b2.crc.dao.setfinder.IQueryInstanceDao;
 import edu.harvard.i2b2.crc.dao.setfinder.LockedoutException;
 import edu.harvard.i2b2.crc.dao.setfinder.QueryExecutorDao;
@@ -35,9 +36,12 @@ import edu.harvard.i2b2.crc.datavo.db.QtQueryInstance;
 import edu.harvard.i2b2.crc.datavo.db.QtQueryStatusType;
 import edu.harvard.i2b2.crc.datavo.i2b2message.BodyType;
 import edu.harvard.i2b2.crc.datavo.i2b2message.RequestMessageType;
+import edu.harvard.i2b2.crc.datavo.setfinder.query.PsmQryHeaderType;
 import edu.harvard.i2b2.crc.datavo.setfinder.query.QueryDefinitionRequestType;
 import edu.harvard.i2b2.crc.datavo.setfinder.query.QueryDefinitionType;
+import edu.harvard.i2b2.crc.datavo.setfinder.query.QueryModeType;
 import edu.harvard.i2b2.crc.datavo.setfinder.query.ResultOutputOptionListType;
+import edu.harvard.i2b2.crc.role.AuthrizationHelper;
 import edu.harvard.i2b2.crc.util.QueryProcessorUtil;
 
 public class ExecRunnable {
@@ -70,6 +74,7 @@ public class ExecRunnable {
 		QueueSender sender = null;
 		QueryProcessorUtil qpUtil = QueryProcessorUtil.getInstance();
 		Queue replyToQueue = null;
+		boolean allowLargeTextValueConstrainFlag = true;
 		try {
 			if (message != null) {
 				replyToQueue = (Queue) message.getJMSReplyTo();
@@ -88,7 +93,7 @@ public class ExecRunnable {
 						.getString(QueryManagerBeanUtil.DS_LOOKUP_PROJECT_ID);
 				String dsLookupOwnerId = message
 						.getString(QueryManagerBeanUtil.DS_LOOKUP_OWNER_ID);
-				System.out.println("domain id" + dsLookupDomainId + " "
+				log.debug("domain id" + dsLookupDomainId + " "
 						+ dsLookupProjectId + " " + dsLookupOwnerId
 						+ " *********************");
 
@@ -107,7 +112,7 @@ public class ExecRunnable {
 				SetFinderDAOFactory sfDAOFactory = daoFactory
 						.getSetFinderDAOFactory();
 				DataSourceLookup dsLookup = sfDAOFactory.getDataSourceLookup();
-				System.out.println("ORIG domain id"
+				log.debug("ORIG domain id"
 						+ sfDAOFactory.getOriginalDataSourceLookup()
 								.getDomainId()
 						+ " ORIG "
@@ -116,6 +121,13 @@ public class ExecRunnable {
 						+ " ORIG "
 						+ sfDAOFactory.getOriginalDataSourceLookup()
 								.getOwnerId());
+				
+				try { 
+					AuthrizationHelper authHelper = new AuthrizationHelper(dsLookupDomainId, dsLookupProjectId, dsLookupOwnerId, daoFactory);
+					authHelper.checkRoleForProtectionLabel("SETFINDER_QRY_WITH_LGTEXT");
+				} catch(I2B2Exception i2b2Ex) {
+					allowLargeTextValueConstrainFlag = false;
+				}
 
 				try {
 					// check if the status is cancelled
@@ -139,7 +151,7 @@ public class ExecRunnable {
 						patientSetId = processQueryRequest(transaction,
 								transactionTimeout, dsLookup, sfDAOFactory,
 								xmlRequest, sqlString, sessionId,
-								queryInstanceId, patientSetId);
+								queryInstanceId, patientSetId,allowLargeTextValueConstrainFlag);
 						log
 								.debug("QueryExecutorMDB completed processing query instance ["
 										+ queryInstanceId + "]");
@@ -307,7 +319,7 @@ public class ExecRunnable {
 			int transactionTimeout, DataSourceLookup dsLookup,
 			SetFinderDAOFactory sfDAOFactory, String xmlRequest,
 			String sqlString, String sessionId, String queryInstanceId,
-			String patientSetId) throws I2B2DAOException, I2B2Exception {
+			String patientSetId, boolean allowLargeTextValueConstrainFlag) throws I2B2DAOException, I2B2Exception {
 
 		// QueryRequestDao queryRequestDao = new QueryRequestDao();
 		// returnedPatientSetId =
@@ -321,10 +333,31 @@ public class ExecRunnable {
 
 		QueryExecutorDao queryExDao = new QueryExecutorDao(dataSource,
 				dsLookup, sfDAOFactory.getOriginalDataSourceLookup());
+		
+		//see if the query will be direct query(no temp table)
+		boolean queryWithoutTempTableFlag = false;
+		
+		PsmQryHeaderType psmQryHeaderType = getSetfinderRequestHeaderType(xmlRequest);
+		if (psmQryHeaderType != null && psmQryHeaderType.getQueryMode() != null) {
+			String queryMode = psmQryHeaderType.getQueryMode().value();
+			
+			if (queryMode.equals(QueryModeType.OPTIMIZE_WITHOUT_TEMP_TABLE.value())) {
+				log.debug("Setfinder query header has [<query_mode>optimize_without_temp_table</query_mode>]");
+				CheckSkipTempTable checkSkipTempTable = new CheckSkipTempTable(); 
+				queryWithoutTempTableFlag = checkSkipTempTable.getSkipTempTable(qdRequestType, resultOutputList);
+				log.debug("Sefinder query without temp table flag [" + queryWithoutTempTableFlag +"]");
+			} else { 
+				log.debug("Setfinder query header doesnt have [<query_mode>optimize_without_temp_table</query_mode>]");
+			}
+		} else { 
+			log.debug("Setfinder query request header <psmheader> is null");
+		}
+		queryExDao.setQueryWithoutTempTableFlag(queryWithoutTempTableFlag);
 
 		queryExDao.executeSQL(transaction, transactionTimeout, dsLookup,
 				sfDAOFactory, xmlRequest, sqlString, queryInstanceId,
-				patientSetId, resultOutputList);
+				patientSetId, resultOutputList,allowLargeTextValueConstrainFlag);
+		
 		return patientSetId;
 	}
 
@@ -347,6 +380,7 @@ public class ExecRunnable {
 					.getValue();
 			requestMessageType.getMessageHeader().getSecurity();
 			requestMessageType.getMessageHeader().getProjectId();
+			
 
 			BodyType bodyType = requestMessageType.getMessageBody();
 			JAXBUnWrapHelper unWrapHelper = new JAXBUnWrapHelper();
@@ -358,6 +392,37 @@ public class ExecRunnable {
 			throw new I2B2Exception(e.getMessage(), e);
 		}
 		return queryDefReqType;
+
+	}
+	
+	private PsmQryHeaderType getSetfinderRequestHeaderType(
+			String xmlRequest) throws I2B2Exception {
+		String queryName = null;
+		QueryDefinitionType queryDef = null;
+		JAXBUtil jaxbUtil = CRCJAXBUtil.getJAXBUtil();
+		JAXBElement jaxbElement = null;
+		PsmQryHeaderType psmHeaderType = null;
+		try {
+			jaxbElement = jaxbUtil.unMashallFromString(xmlRequest);
+
+			if (jaxbElement == null) {
+				throw new I2B2Exception(
+						"null value in after unmarshalling request string ");
+			}
+
+			RequestMessageType requestMessageType = (RequestMessageType) jaxbElement
+					.getValue();
+			BodyType bodyType = requestMessageType.getMessageBody();
+			JAXBUnWrapHelper unWrapHelper = new JAXBUnWrapHelper();
+			psmHeaderType = (PsmQryHeaderType) unWrapHelper
+					.getObjectByClass(bodyType.getAny(),
+							PsmQryHeaderType.class);
+			
+		} catch (JAXBUtilException e) {
+			log.error(e.getMessage(), e);
+			throw new I2B2Exception(e.getMessage(), e);
+		}
+		return psmHeaderType;
 
 	}
 

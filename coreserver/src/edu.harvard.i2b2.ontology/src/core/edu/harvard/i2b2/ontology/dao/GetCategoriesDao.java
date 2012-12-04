@@ -120,7 +120,7 @@ public class GetCategoriesDao extends JdbcDaoSupport {
 	            	child.setTablename(rs.getString("c_tablename")); 
 	            	child.setColumnname(rs.getString("c_columnname")); 
 	            	child.setColumndatatype(rs.getString("c_columndatatype")); 
-	            	child.setOperator(rs.getString("c_operator"));
+	            	child.setOperator(rs.getString("c_operator")); 
 	            	child.setDimcode(rs.getString("c_dimcode")); 
 	            	child.setTooltip(rs.getString("c_tooltip"));
 	            }

@@ -56,7 +56,7 @@ public class I2B2MessageResponseFactory {
 		MessageHeaderType messageHeader = new MessageHeaderType();
 		ApplicationType appType = new ApplicationType();
 		appType.setApplicationName("FRC Cell");
-		appType.setApplicationVersion("1.5");
+		appType.setApplicationVersion("1.601");
 		
 		
 		if (requestXml != null) {

@@ -37,8 +37,10 @@ import edu.harvard.i2b2.common.exception.I2B2DAOException;
 import edu.harvard.i2b2.common.exception.I2B2Exception;
 import edu.harvard.i2b2.common.util.db.JDBCUtil;
 import edu.harvard.i2b2.common.util.jaxb.DTOFactory;
+import edu.harvard.i2b2.common.util.jaxb.JAXBUtilException;
 import edu.harvard.i2b2.ontology.datavo.pm.ProjectType;
 import edu.harvard.i2b2.ontology.datavo.vdo.ConceptType;
+import edu.harvard.i2b2.ontology.datavo.vdo.GetCategoriesType;
 import edu.harvard.i2b2.ontology.datavo.vdo.GetChildrenType;
 import edu.harvard.i2b2.ontology.datavo.vdo.GetModifierChildrenType;
 import edu.harvard.i2b2.ontology.datavo.vdo.GetModifierInfoType;
@@ -53,6 +55,7 @@ import edu.harvard.i2b2.ontology.ejb.NodeType;
 import edu.harvard.i2b2.ontology.util.OntologyUtil;
 import edu.harvard.i2b2.ontology.util.Roles;
 import edu.harvard.i2b2.ontology.util.StringUtil;
+import edu.harvard.i2b2.ontology.ws.GetChildrenDataMessage;
 
 public class ConceptDao extends JdbcDaoSupport {
 	
@@ -94,7 +97,7 @@ public class ConceptDao extends JdbcDaoSupport {
 		return OntologyUtil.getInstance().getMetaDataSchemaName();
 	}
 	
-	public List findRootCategories(final GetReturnType returnType, final ProjectType projectInfo, final DBInfoType dbInfo) throws I2B2Exception, I2B2DAOException{
+	public List findRootCategories(final GetCategoriesType returnType, final ProjectType projectInfo, final DBInfoType dbInfo) throws I2B2Exception, I2B2DAOException{
 				
 		// find return parameters
 		String parameters = CAT_DEFAULT;		
@@ -175,12 +178,13 @@ public class ConceptDao extends JdbcDaoSupport {
 	            	if (obfuscatedUserFlag == false && nullFlag == false) {
 	            		child.setTotalnum(totalNum);
 	            	} 
-	            			            	
+	            		
+	            	
 	            	child.setFacttablecolumn(rs.getString("c_facttablecolumn" ));
 	            	child.setTablename(rs.getString("c_dimtablename")); 
 	            	child.setColumnname(rs.getString("c_columnname")); 
 	            	child.setColumndatatype(rs.getString("c_columndatatype")); 
-	            	child.setOperator(rs.getString("c_operator")); 	            	
+	            	child.setOperator(rs.getString("c_operator")); 
 	            	child.setDimcode(rs.getString("c_dimcode")); 
 	            	child.setTooltip(rs.getString("c_tooltip"));
 	            	child.setValuetypeCd(rs.getString("valuetype_cd"));
@@ -191,22 +195,53 @@ public class ConceptDao extends JdbcDaoSupport {
 	    
 	    
 		List queryResult = null;
+		
+
 
 		if (!protectedAccess){
-			String tablesSql = "select distinct(c_table_cd), " + parameters + " from " +  metadataSchema +  "table_access where c_protected_access = ? order by c_name";
-			log.debug(tablesSql);
+			String categoriesSql = "select c_table_cd, " + parameters + " from " +  metadataSchema +  "table_access where c_protected_access = ? ";
+			
+			String hidden = "";
+			if(returnType.isHiddens() == false)
+				hidden = " and c_visualattributes not like '_H%'";
+		
+			String synonym = "";
+			if(returnType.isSynonyms() == false)
+				synonym = " and c_synonym_cd = 'N'";
+			
+			categoriesSql = categoriesSql + hidden + synonym + "order by c_name";
+			
+			log.debug(categoriesSql);
 			try {
-				queryResult = jt.query(tablesSql, mapper, "N");
+				queryResult = jt.query(categoriesSql, mapper, "N");
 			} catch (DataAccessException e) {
 				log.error(e.getMessage());
 				throw new I2B2DAOException("Database error");
 			}
 		}
 		else{
-			String tablesSql = "select distinct(c_table_cd), " + parameters + " from " +  metadataSchema +  "table_access order by c_name";
-			log.debug(tablesSql);
+			String categoriesSql = "select c_table_cd, " + parameters + " from " +  metadataSchema +  "table_access ";
+			
+			String hidden = "";
+			if(returnType.isHiddens() == false)
+				hidden = " where c_visualattributes not like '_H%'";
+		
+			String synonym = "";
+			if(returnType.isSynonyms() == false)
+				synonym = " c_synonym_cd = 'N'";
+			
+			String whereClause = hidden;
+			if((whereClause.length() > 2) && (synonym.length() > 2))
+				whereClause = whereClause + " and " + synonym;
+			
+			else if (synonym.length() > 2)
+				whereClause = " where " + synonym;
+			
+			categoriesSql = categoriesSql + whereClause + " order by c_name";			
+			log.debug(categoriesSql);
+
 			try {
-				queryResult = jt.query(tablesSql, mapper);
+				queryResult = jt.query(categoriesSql, mapper);
 			} catch (DataAccessException e) {
 				log.error(e.getMessage());
 				throw new I2B2DAOException("Database Error");
@@ -226,7 +261,7 @@ public class ConceptDao extends JdbcDaoSupport {
 //			        	rsmd.get
 			        	if(rs.getClob("c_metadataxml") == null){
 			        		concept.setMetadataxml(null);
-			        	} else {
+			        	}else {
 			        		String c_xml = null;
 			        		try {
 			        			c_xml = JDBCUtil.getClobString(rs.getClob("c_metadataxml"));
@@ -234,7 +269,8 @@ public class ConceptDao extends JdbcDaoSupport {
 			        			log.error(e1.getMessage());
 			        			concept.setMetadataxml(null);
 			        		}
-			        		if ((c_xml!=null)&&(c_xml.trim().length()>0)&&(!c_xml.equals("(null)"))) {
+			        		if ((c_xml!=null)&&(c_xml.trim().length()>0)&&(!c_xml.equals("(null)")))
+			        		{
 			        			SAXBuilder parser = new SAXBuilder();
 			        			java.io.StringReader xmlStringReader = new java.io.StringReader(c_xml);
 			        			Element rootElement = null;
@@ -255,7 +291,7 @@ public class ConceptDao extends JdbcDaoSupport {
 			        				xml.getAny().add(rootElement);								
 			        				concept.setMetadataxml(xml);
 			        			}
-			        		} else {
+			        		}else {
 			        			concept.setMetadataxml(null);
 			        		}
 			        	}	
@@ -295,8 +331,10 @@ public class ConceptDao extends JdbcDaoSupport {
 		return queryResult;
 	}
 	
-	public List findChildrenByParent(final GetChildrenType childrenType, ProjectType projectInfo, DBInfoType dbInfo) throws I2B2DAOException, I2B2Exception{
+	public List findChildrenByParent(final GetChildrenDataMessage childrenMsg, ProjectType projectInfo, DBInfoType dbInfo) throws I2B2DAOException, I2B2Exception, JAXBUtilException{
 
+		final GetChildrenType childrenType = childrenMsg.getChildrenType();
+		
 		// find return parameters
 		String parameters = DEFAULT;		
 		if (childrenType.getType().equals("limited")){
@@ -361,7 +399,7 @@ public class ConceptDao extends JdbcDaoSupport {
 			}
 		}
 
-		String path = StringUtil.getPath(childrenType.getParent()); //, dbInfo.getDb_serverType();
+		String path = StringUtil.getPath(childrenType.getParent());
 		String searchPath = StringUtil.escapeBackslash(path, dbInfo.getDb_serverType()) + "%";
 
 // Lookup to get chlevel + 1 ---  dont allow synonyms so we only get one result back
@@ -399,56 +437,66 @@ public class ConceptDao extends JdbcDaoSupport {
 			log.error(e.getMessage());
 			throw new I2B2DAOException("Database Error");
 		}
-		log.debug("result size = " + queryResult.size());
 		
-		if(queryResult.size() > 0){
-			Iterator<ConceptType>  it2 = queryResult.iterator();
-			while (it2.hasNext()){
-				ConceptType concept = it2.next();
-				// if a leaf has modifiers report it with visAttrib == F
-				if(concept.getVisualattributes().startsWith("L")){
-					String modPath = StringUtil.escapeBackslash(StringUtil.getPath(concept.getKey()), dbInfo.getDb_serverType());
-					String sqlCount = "select count(*) from " + metadataSchema+ tableName  + " where m_exclusion_cd is null and c_fullname in";
-					int queryCount = 0;
-					// build m_applied_path sub-query
-					String m_applied_pathSql = "(m_applied_path = '" + modPath +"'";
-					while (modPath.length() > 3) {
-						if(modPath.endsWith("%")){
-							modPath = modPath.substring(0, modPath.length()-2);
-							modPath = modPath.substring(0, modPath.lastIndexOf("\\") + 1) + "%";			
+		
+		if(Float.parseFloat(				
+				childrenMsg.getMessageHeaderType().getSendingApplication().getApplicationVersion()) > 1.5)
+		{	
+			if(queryResult.size() > 0){
+				Iterator<ConceptType>  it2 = queryResult.iterator();
+				while (it2.hasNext()){
+					ConceptType concept = it2.next();
+					// if a leaf has modifiers report it with visAttrib == F
+					if(concept.getVisualattributes().startsWith("L")){
+					    String modPath = StringUtil.escapeBackslash(StringUtil.getPath(concept.getKey()), dbInfo.getDb_serverType());
+						// I have to do this the hard way because there are a dynamic number of applied paths to check
+						//   prevent SQL injection
+						if(modPath.contains("'")){
+							modPath = modPath.replaceAll("'", "''");
 						}
+						String sqlCount = "select count(*) from " + metadataSchema+ tableName  + " where m_exclusion_cd is null and c_fullname in";
+						int queryCount = 0;
+						// build m_applied_path sub-query
+						String m_applied_pathSql = "(m_applied_path = '" + modPath +"'";
+						while (modPath.length() > 3) {
+							if(modPath.endsWith("%")){
+								modPath = modPath.substring(0, modPath.length()-2);
+								modPath = modPath.substring(0, modPath.lastIndexOf("\\") + 1) + "%";			
+							}
+							else
+								modPath = modPath + "%";
+							m_applied_pathSql = m_applied_pathSql + " or m_applied_path = '" + 
+                                        StringUtil.escapeBackslash(modPath, dbInfo.getDb_serverType()) + "'" ;
+						}
+						sqlCount = sqlCount + "(select c_fullname from " + metadataSchema+ tableName  + " where c_hlevel = 1 and m_exclusion_cd is null and " + m_applied_pathSql + " )";
+
+						if(dbInfo.getDb_serverType().toUpperCase().equals("ORACLE"))
+							sqlCount = sqlCount + " MINUS ";
 						else
-							modPath =  modPath + "%";
-						m_applied_pathSql = m_applied_pathSql + " or m_applied_path = '" + StringUtil.escapeBackslash(modPath, dbInfo.getDb_serverType()) + "'" ; // modPath + "'" ;
-					}
-					sqlCount = sqlCount + "(select c_fullname from " + metadataSchema+ tableName  + " where c_hlevel = 1 and m_exclusion_cd is null and " + m_applied_pathSql + " )";
+							sqlCount = sqlCount + " EXCEPT ";
 
-					if(dbInfo.getDb_serverType().equals("ORACLE"))
-						sqlCount = sqlCount + " MINUS ";
-					else
-						sqlCount = sqlCount + " EXCEPT ";
-
-					sqlCount = sqlCount+ " (select c_fullname from " + metadataSchema+ tableName  + " where m_exclusion_cd is not null and " + m_applied_pathSql + " )))";
-					
-					
-					try {
-						queryCount = jt.queryForInt(sqlCount);
-					} catch (DataAccessException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					//				log.debug("COUNT " + queryCount + " for " +sqlCount);
+						sqlCount = sqlCount+ " (select c_fullname from " + metadataSchema+ tableName  + " where m_exclusion_cd is not null and " + m_applied_pathSql + " )))";
 
 
-					if(queryCount > 0){
-						concept.setVisualattributes(concept.getVisualattributes().replace('L', 'F'));
-						log.debug("changed " + concept.getName() + " from leaf to folder: modCount > 0");
+						try {
+							queryCount = jt.queryForInt(sqlCount);
+						} catch (DataAccessException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						//				log.debug("COUNT " + queryCount + " for " +sqlCount);
+
+
+						if(queryCount > 0){
+							concept.setVisualattributes(concept.getVisualattributes().replace('L', 'F'));
+							log.debug("changed " + concept.getName() + " from leaf to folder: modCount > 0");
+						}
 					}
 				}
 			}
-		}
-
 		
+		}
+		log.debug("get_children result size = " + queryResult.size());
 		return queryResult;
 		// tested statement with aqua data studio   verified output from above against this. 
 		// select  c_fullname, c_name, c_synonym_cd, c_visualattributes  from metadata.testrpdr 
@@ -529,7 +577,10 @@ public class ConceptDao extends JdbcDaoSupport {
 		}
 
 		String path = StringUtil.escapeBackslash(StringUtil.getPath(termInfoType.getSelf()), dbInfo.getDb_serverType());
-		String searchPath = path;		
+		if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+			path = path.replaceAll("\\[", "[[]");
+		}
+		String searchPath = path;
 
 
 		String hidden = "";
@@ -638,35 +689,59 @@ public class ConceptDao extends JdbcDaoSupport {
 
 		 String nameInfoSql = null;
 		    String compareName = null;
+		    
+		    String value = vocabType.getMatchStr().getValue();
+	//		using JDBCtemplate so dont need to do apostrophe replace   
+	//		if(value.contains("'")){
+	//			value = value.replaceAll("'", "''");
+	//		}
+			
+			String category = categoryResult.get(0).getKey();
+			if(category.contains("'")){
+				category = category.replaceAll("'", "''");
+			}
+								
+			
 			// dont do the sql injection replace; it breaks the service.
 		    if(vocabType.getMatchStr().getStrategy().equals("exact")) {
-		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() + " where upper(c_name) = ? and c_fullname like '" + StringUtil.doubleEscapeBackslash(categoryResult.get(0).getKey(), dbInfo.getDb_serverType()) +"%'";
-		    	compareName = vocabType.getMatchStr().getValue().toUpperCase();
-		  
+		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() + " where upper(c_name) = ? and c_fullname like '" + StringUtil.doubleEscapeBackslash(category, dbInfo.getDb_serverType()) + "%'";
+		    	compareName = value.toUpperCase();
+		    	
 		    }
 		    
 		    else if(vocabType.getMatchStr().getStrategy().equals("left")){
-		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() +" where upper(c_name) like ?  and c_fullname like '" + StringUtil.doubleEscapeBackslash(categoryResult.get(0).getKey(), dbInfo.getDb_serverType()) +"%'";
+		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() + " where upper(c_name) = ? and c_fullname like '" + StringUtil.doubleEscapeBackslash(category, dbInfo.getDb_serverType()) +"%'";
 		    	compareName = vocabType.getMatchStr().getValue().toUpperCase() + "%";
+		    	if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+					compareName = compareName.replaceAll("\\[", "[[]");
+				}
 		    }
 		    
 		    else if(vocabType.getMatchStr().getStrategy().equals("right")) {
-		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() +" where upper(c_name) like ?  and c_fullname like '" + StringUtil.doubleEscapeBackslash(categoryResult.get(0).getKey(), dbInfo.getDb_serverType()) +"%'";
+		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() +" where upper(c_name) like ?  and c_fullname like '" + StringUtil.doubleEscapeBackslash(category, dbInfo.getDb_serverType()) +"%'";
 		    	compareName =  "%" + vocabType.getMatchStr().getValue().toUpperCase();
+		    	if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+					compareName = compareName.replaceAll("\\[", "[[]");
+				}
 		    }
 		    
 		    else if(vocabType.getMatchStr().getStrategy().equals("contains")) {
-		    	if(!(vocabType.getMatchStr().getValue().contains(" "))){
-		    		nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() +" where upper(c_name) like ?  and c_fullname like '" + StringUtil.doubleEscapeBackslash(categoryResult.get(0).getKey(), dbInfo.getDb_serverType()) +"%'";
-		    		compareName =  "%" + vocabType.getMatchStr().getValue().toUpperCase() + "%";
+		    	if(!(value.contains(" "))){
+		    		nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename() +" where upper(c_name) like ?  and c_fullname like '" + StringUtil.doubleEscapeBackslash(category, dbInfo.getDb_serverType()) +"%'";
+		    		compareName =  "%" +	value.toUpperCase() + "%";
+		    		if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+						compareName = compareName.replaceAll("\\[", "[[]");
+					}
 		    	}else{
 		    		nameInfoSql = "select " + parameters  + " from " + metadataSchema+categoryResult.get(0).getTablename();
-		    		nameInfoSql = nameInfoSql + parseMatchString(vocabType.getMatchStr().getValue())+ " and c_fullname like '" + StringUtil.doubleEscapeBackslash(categoryResult.get(0).getKey(), dbInfo.getDb_serverType()) +"%'";;
+		    		if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+						value = value.replaceAll("\\[", "[[]");
+					}
+		    		nameInfoSql = nameInfoSql + parseMatchString(value)+ " and c_fullname like '" + StringUtil.doubleEscapeBackslash(category, dbInfo.getDb_serverType()) +"%'";;
 		    		compareName = null;
 		    	}
 		    }
 		    
-
 
 		String hidden = "";
 		if(vocabType.isHiddens() == false)
@@ -678,7 +753,7 @@ public class ConceptDao extends JdbcDaoSupport {
 		
 		nameInfoSql = nameInfoSql + hidden + synonym + " order by c_name ";
 	    
-	//	log.info(nameInfoSql + " " +compareName);
+		log.info(nameInfoSql + " " +compareName);
 		boolean obfuscatedUserFlag = Roles.getInstance().isRoleOfuscated(projectInfo);
 		ParameterizedRowMapper<ConceptType> mapper = getMapper(new NodeType(vocabType),obfuscatedUserFlag, dbInfo.getDb_serverType());
 
@@ -802,7 +877,7 @@ public class ConceptDao extends JdbcDaoSupport {
 		    	whereClause = " where upper(c_basecode) like '" + value.toUpperCase() + "%'";
 		    }
 
-		log.debug(vocabType.getMatchStr().getStrategy() + whereClause);
+	//	log.debug(vocabType.getMatchStr().getStrategy() + whereClause);
 		
 		String codeInfoSql = null;
 		if(tableNames != null){
@@ -811,9 +886,9 @@ public class ConceptDao extends JdbcDaoSupport {
 			// the following (distinct) doesnt work for a flattened hierarchy but is left for
 				//  dbs other than sqlserver or oracle.   [c_table_cd is needed for key]
 			String tableCdSql = ", (select distinct(c_table_cd) from "+ metadataSchema + "TABLE_ACCESS where c_table_name = '"+  table+ "') as tableCd"; 
-			if(dbType.equals("SQLSERVER"))
+			if(dbType.toUpperCase().equals("SQLSERVER"))
 				tableCdSql = ", (select top 1(c_table_cd) from "+ metadataSchema + "TABLE_ACCESS where c_table_name = '"+  table+ "') as tableCd"; 
-			else if (dbType.equals("ORACLE"))
+			else if (dbType.toUpperCase().equals("ORACLE"))
 				tableCdSql = ", (select c_table_cd from "+ metadataSchema + "TABLE_ACCESS where c_table_name = '"+  table+ "' and rownum <= 1) as tableCd"; 
 			codeInfoSql = "select " + parameters + tableCdSql + " from " + metadataSchema + table + whereClause	+ hidden + synonym;;
 			while(itTn.hasNext()){		
@@ -821,11 +896,11 @@ public class ConceptDao extends JdbcDaoSupport {
 				// the following (distinct) doesnt work for a flattened hierarchy but is left for
 				//  dbs other than sqlserver or oracle.    [c_table_cd is needed for key]
 				tableCdSql = ", (select distinct(c_table_cd) from "+ metadataSchema + "TABLE_ACCESS where c_table_name = '"+  table+ "') as tableCd"; 
-				if(dbType.equals("SQLSERVER"))
+				if(dbType.toUpperCase().equals("SQLSERVER"))
 					tableCdSql = ", (select top 1(c_table_cd) from "+ metadataSchema + "TABLE_ACCESS where c_table_name = '"+  table+ "') as tableCd"; 
-				else if (dbType.equals("ORACLE"))
+				else if (dbType.toUpperCase().equals("ORACLE"))
 					tableCdSql = ", (select c_table_cd from "+ metadataSchema + "TABLE_ACCESS where c_table_name = '"+  table+ "' and rownum <= 1) as tableCd"; 
-				else if (dbType.equals("POSTGRES"))
+				else if (dbType.toUpperCase().equals("POSTGRES"))
 					tableCdSql = ", (select c_table_cd from "+ metadataSchema + "TABLE_ACCESS where c_table_name = '"+  table+ "' limit 1) as tableCd";
 				codeInfoSql = codeInfoSql +  " union all (select "+ parameters + tableCdSql + " from " + metadataSchema + table + whereClause
 				+ hidden + synonym + ")";
@@ -1102,8 +1177,16 @@ public class ConceptDao extends JdbcDaoSupport {
 		}
 */
 		String path = StringUtil.escapeBackslash(StringUtil.getLiteralPath(modifierType.getSelf()), dbInfo.getDb_serverType());
-		String sql = "select " + parameters + " from "+ metadataSchema+ tableName + " where m_exclusion_cd is null and c_fullname in (";
+		// I have to do this the hard way because there are a dynamic number of applied paths to check
+		//   prevent SQL injection
+		if(path.contains("'")){
+			path = path.replaceAll("'", "''");
+		}
+		
+		
+//		String sql = "select " + parameters + " from "+ metadataSchema+ tableName + " where m_exclusion_cd is null and c_fullname in (";
 		String inclusionSql = "select c_fullname from " + metadataSchema+ tableName  + " where m_applied_path = '" + path + "' and c_hlevel = 1 and m_exclusion_cd is null";
+		String modifier_select =  " and m_applied_path in ('" + path + "'";
 		while (path.length() > 2) {
 			if(path.endsWith("%")){
 				path = path.substring(0, path.length()-2);
@@ -1112,14 +1195,22 @@ public class ConceptDao extends JdbcDaoSupport {
 			else
 				path = path + "%";
 			inclusionSql = inclusionSql + " union all (select c_fullname from " + metadataSchema+ tableName  + " where m_applied_path = '" + StringUtil.escapeBackslash(path, dbInfo.getDb_serverType()) + "' and c_hlevel = 1 and m_exclusion_cd is null)";
+			modifier_select = modifier_select + ", '" + path + "'";
 		}
 
-		if(dbInfo.getDb_serverType().equals("ORACLE"))
+		String sql = "select " + parameters + " from "+ metadataSchema+ tableName + " where m_exclusion_cd is null " + modifier_select +") and c_fullname in (";
+		
+		if(dbInfo.getDb_serverType().toUpperCase().equals("ORACLE"))
 			sql = sql + inclusionSql + " MINUS (";
 		else
 			sql = sql + inclusionSql + " EXCEPT (";
 
 		path = StringUtil.escapeBackslash(StringUtil.getLiteralPath(modifierType.getSelf()), dbInfo.getDb_serverType());
+		// I have to do this the hard way because there are a dynamic number of applied paths to check
+		//   prevent SQL injection
+		if(path.contains("'")){
+			path = path.replaceAll("'", "''");
+		}
 		String exclusionSql = "select c_fullname from " + metadataSchema+ tableName  + " where m_applied_path = '" + path + "' and m_exclusion_cd is not null";
 		while (path.length() > 2) {
 			if(path.endsWith("%")){
@@ -1189,8 +1280,6 @@ public class ConceptDao extends JdbcDaoSupport {
 					child.setColumnname(rs.getString("c_columnname")); 
 					child.setColumndatatype(rs.getString("c_columndatatype")); 
 					child.setOperator(rs.getString("c_operator")); 
-					// log.debug("smuniraju: ConceptDao.java: escaping quote in dimcode");
-	            	// child.setDimcode(StringUtil.escapeSingleQuote(rs.getString("c_dimcode")));
 					child.setDimcode(rs.getString("c_dimcode")); 
 				}
 				
@@ -1351,10 +1440,8 @@ public class ConceptDao extends JdbcDaoSupport {
 		}
 
 		String path = StringUtil.escapeBackslash(StringUtil.getPath(modifierChildrenType.getParent()), dbInfo.getDb_serverType());
-		String searchPath =  path + "%";
+		String searchPath = path + "%";
 
-// Lookup to get chlevel + 1 ---  dont allow synonyms so we only get one result back
-				
 		String levelSql = "select c_hlevel from " + metadataSchema+tableName  + " where c_fullname = ?  and c_synonym_cd = 'N' and m_applied_path = ? and m_exclusion_cd is null";
 
 	    int level = 0;
@@ -1372,36 +1459,69 @@ public class ConceptDao extends JdbcDaoSupport {
 	
 		String synonym = "";
 		if(modifierChildrenType.isSynonyms() == false)
-			synonym = " and c_synonym_cd = 'N'";
-		
-		String sql = "select " + parameters + " from "+ metadataSchema+ tableName + " where m_exclusion_cd is null" + hidden + synonym + " and c_fullname in (";
-		
-		String inclusionSql = " (select c_fullname from " + metadataSchema+tableName  + " where c_fullname like ? and c_hlevel = ? and m_exclusion_cd is null "; 
-
- 
-		if(dbInfo.getDb_serverType().equals("ORACLE"))
-			sql = sql + inclusionSql + " ) MINUS (";
-		else
-			sql = sql + inclusionSql +  " ) EXCEPT (";
-			
+			synonym = " and c_synonym_cd = 'N'";		
 		
 		String appliedConcept = StringUtil.getLiteralPath(modifierChildrenType.getAppliedConcept());
+		// I have to do this the hard way because there are a dynamic number of applied paths to check
+		//   prevent SQL injection
+		if(appliedConcept.contains("'")){
+			appliedConcept = appliedConcept.replaceAll("'", "''");
+		}
+		
+		String inclusionSql = "select c_fullname from " + metadataSchema+ tableName  + " where m_applied_path = ? and c_hlevel = " + (level+1) + " and m_exclusion_cd is null";
+		String modifier_select =  " and m_applied_path in ('" + appliedConcept + "'";
+		while (appliedConcept.length() > 2) {
+			if(appliedConcept.endsWith("%")){
+				appliedConcept = appliedConcept.substring(0, appliedConcept.length()-2);
+				appliedConcept = appliedConcept.substring(0, appliedConcept.lastIndexOf("\\") + 1) + "%";			
+			}
+			else
+				appliedConcept = appliedConcept + "%";
+			inclusionSql = inclusionSql + " union all (select c_fullname from " + metadataSchema+ tableName  + " where m_applied_path = '" + appliedConcept + "' and c_hlevel = " + (level+1) + " and m_exclusion_cd is null)";
+			modifier_select = modifier_select + ", '" + appliedConcept + "'";
+		}
 
-		String exclusionSql = " select c_fullname from " + metadataSchema+tableName  + " where c_fullname like ? and c_hlevel = ? and m_exclusion_cd is not null " +
-				" and ( m_applied_path = ?  or m_applied_path = ? ) ) )";
-			
-		sql = sql +  exclusionSql +  " order by c_name ";	
+		String sql = "select " + parameters + " from "+ metadataSchema+ tableName + " where m_exclusion_cd is null and c_hlevel = ? and c_fullname like ? " 
+		+ modifier_select +") and c_fullname in (";
+	
+
+		if(dbInfo.getDb_serverType().toUpperCase().equals("ORACLE"))
+			sql = sql + inclusionSql + " MINUS (";
+		else
+			sql = sql + inclusionSql + " EXCEPT (";
+
+		String exclusionSql = "select c_fullname from " + metadataSchema+ tableName  + " where m_applied_path = ? and m_exclusion_cd is not null";
+		String appliedExclConcept = StringUtil.getLiteralPath(modifierChildrenType.getAppliedConcept());
+		// I have to do this the hard way because there are a dynamic number of applied paths to check
+		//   prevent SQL injection
+		if(appliedExclConcept.contains("'")){
+			appliedExclConcept = appliedExclConcept.replaceAll("'", "''");
+		}
+		while (appliedExclConcept.length() > 2) {
+			if(appliedExclConcept.endsWith("%")){
+				appliedExclConcept = appliedExclConcept.substring(0, appliedExclConcept.length()-2);
+				appliedExclConcept = appliedExclConcept.substring(0, appliedExclConcept.lastIndexOf("\\") + 1) + "%";			
+			}
+			else
+				appliedExclConcept = appliedExclConcept + "%";
+			exclusionSql = exclusionSql + " union all (select c_fullname from " + metadataSchema+ tableName  + " where m_applied_path = '" + appliedExclConcept + "' and m_exclusion_cd is not null)";
+		}
+
+		sql = sql + exclusionSql + "))";
 		
+		sql = sql + " order by c_name ";
 		
-		log.info("Find Mod children:" + sql + " " + path + " " + level + " " + appliedConcept);
+		log.debug("findModChildren: " + sql + (level+1) + searchPath +  StringUtil.getLiteralPath(modifierChildrenType.getAppliedConcept()));
 		
+	
 		final boolean ofuscatedUserFlag = Roles.getInstance().isRoleOfuscated(projectInfo);
 		
 		ParameterizedRowMapper<ModifierType> modMapper = getModMapper(new NodeType (modifierChildrenType), ofuscatedUserFlag, dbInfo.getDb_serverType());
 		
 		List queryResult = null;
 		try {
-			queryResult = jt.query(sql, modMapper, searchPath, (level + 1), searchPath, (level+1), appliedConcept, (appliedConcept+"%"));
+			queryResult = jt.query(sql, modMapper, (level+1), searchPath,  StringUtil.getLiteralPath(modifierChildrenType.getAppliedConcept()),
+					StringUtil.getLiteralPath(modifierChildrenType.getAppliedConcept()));
 		} catch (DataAccessException e) {
 			log.error(e.getMessage());
 			throw new I2B2DAOException("Database Error");
@@ -1585,47 +1705,58 @@ public class ConceptDao extends JdbcDaoSupport {
 			}
 		}
 
-	//   prevent SQL injection
+	//   prevent SQL injection and also catch case where the value contains an (')
 		String value = vocabType.getMatchStr().getValue();
 		if(value.contains("'")){
 			value = vocabType.getMatchStr().getValue().replaceAll("'", "''");
 		}
 		String nameInfoSql = null;
-		    String compareName = null;
-			String path = StringUtil.escapeBackslash(StringUtil.getLiteralPath(vocabType.getSelf()), dbInfo.getDb_serverType());
-			// dont do the sql injection replace; it breaks the service.
+		String compareName = null;
+		String modifierPath = StringUtil.escapeBackslash(StringUtil.getLiteralPath(vocabType.getSelf()), dbInfo.getDb_serverType());
+		if(modifierPath.contains("'")){
+			modifierPath = modifierPath.replaceAll("'", "''");
+		}
+			
 		    if(vocabType.getMatchStr().getStrategy().equals("exact")) {
 		    	compareName = value.toUpperCase();
-		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema + tableName + " where upper(c_name) = '" + compareName + "'" ;//and m_applied_path = '" + path + "'";
-		    	
-		  
+		    	nameInfoSql = "select c_fullname from " + metadataSchema + tableName + " where upper(c_name) = '" + compareName + "'" ;//and m_applied_path = '" + path + "'";	  
 		    }
 		    
 		    else if(vocabType.getMatchStr().getStrategy().equals("left")){
 		    	compareName = value.toUpperCase() + "%";
-		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema + tableName +" where upper(c_name) like '" + compareName + "'";//  and m_applied_path = '" + path + "'";
-		    	
+		    	if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+					compareName = compareName.replaceAll("\\[", "[[]");
+				}
+		    	nameInfoSql = "select c_fullname from " + metadataSchema + tableName +" where upper(c_name) like '" + compareName + "'";//  and m_applied_path = '" + path + "'";
 		    }
 		    
 		    else if(vocabType.getMatchStr().getStrategy().equals("right")) {
 		    	compareName =  "%" + value.toUpperCase();
-		    	nameInfoSql = "select " + parameters  + " from " + metadataSchema + tableName +" where upper(c_name) like '" + compareName + "'";//and m_applied_path = '" + path + "'";
-		    	
+		    	if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+					compareName = compareName.replaceAll("\\[", "[[]");
+				}
+		    	nameInfoSql = "select c_fullname from " + metadataSchema + tableName +" where upper(c_name) like '" + compareName + "'";//and m_applied_path = '" + path + "'";	
 		    }
 		    
 		    else if(vocabType.getMatchStr().getStrategy().equals("contains")) {
 		    	if(!(value.contains(" "))){
 		    		compareName =  "%" + value.toUpperCase() + "%";
-		    		nameInfoSql = "select " + parameters  + " from " + metadataSchema + tableName +" where upper(c_name) like '" + compareName + "'";  //and m_applied_path = '" + path + "'";
+		    		if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+						compareName = compareName.replaceAll("\\[", "[[]");
+					}
+		    		nameInfoSql = "select c_fullname from " + metadataSchema + tableName +" where upper(c_name) like '" + compareName + "'";  //and m_applied_path = '" + path + "'";
 
 		    	}else{
-		    		nameInfoSql = "select " + parameters  + " from " + metadataSchema + tableName ;
+		    		nameInfoSql = "select c_fullname from " + metadataSchema + tableName ;
+		    		if(dbInfo.getDb_serverType().toUpperCase().equals("SQLSERVER")){
+						value = value.replaceAll("\\[", "[[]");
+					}
 		    		nameInfoSql = nameInfoSql + parseMatchString(value);// + "and m_applied_path = '" + path + "'";
 		    		compareName = null;
 		    	}
 		    }
 
-		    String wherePath = " and m_applied_path = '" + path + "' ";
+		    String appliedPath   = " and m_applied_path = '" + modifierPath + "' ";
 		    String hidden = "";
 			if(vocabType.isHiddens() == false)
 				hidden = " and c_visualattributes not like '_H%' ";
@@ -1634,23 +1765,43 @@ public class ConceptDao extends JdbcDaoSupport {
 			if(vocabType.isSynonyms() == false)
 				synonym = " and c_synonym_cd = 'N' ";
 			
-		    String modNameInfoSql = nameInfoSql + wherePath + hidden + synonym;
-				while (path.length() > 3) {
-					if(path.endsWith("%")){
-						path = path.substring(0, path.length()-2);
-						path = path.substring(0, path.lastIndexOf("\\") + 1) + "%";			
+		    String inclusionSql = nameInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is null ";
+		    String modifierSelect = "'" +	modifierPath + "'";
+				while (modifierPath.length() > 3) {
+					if(modifierPath.endsWith("%")){
+						modifierPath = modifierPath.substring(0, modifierPath.length()-2);
+						modifierPath = modifierPath.substring(0, modifierPath.lastIndexOf("\\") + 1) + "%";			
 					}
 					else
-						path = path + "%";
-					wherePath = " and m_applied_path = '" + StringUtil.escapeBackslash(path, dbInfo.getDb_serverType()) + "' ";
-					modNameInfoSql = modNameInfoSql + " union all " + nameInfoSql + wherePath + hidden + synonym;
+						modifierPath = modifierPath + "%";
+					modifierSelect = modifierSelect + ", '" + StringUtil.escapeBackslash(modifierPath, dbInfo.getDb_serverType()) + "'";
+					appliedPath = " and m_applied_path = '" + StringUtil.escapeBackslash(modifierPath, dbInfo.getDb_serverType()) + "' ";
+					inclusionSql = inclusionSql + " union all " + nameInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is null ";
 				}
 		    
+		    String exclusionSql = nameInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is not null";
+			modifierPath = StringUtil.getLiteralPath(vocabType.getSelf());
+			if(modifierPath.contains("'")){
+				modifierPath = modifierPath.replaceAll("'", "''");
+			}
+			while (modifierPath.length() > 3) {
+				if(modifierPath.endsWith("%")){
+					modifierPath = modifierPath.substring(0, modifierPath.length()-2);
+					modifierPath = modifierPath.substring(0, modifierPath.lastIndexOf("\\") + 1) + "%";			
+				}
+				else
+					modifierPath = modifierPath + "%";
+				appliedPath = " and m_applied_path = '" + modifierPath + "' ";
+				exclusionSql = exclusionSql + " union all " + nameInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is not null ";
+			}
+		    	
+			String exceptSql =  " EXCEPT (";
+			if(dbInfo.getDb_serverType().toUpperCase().equals("ORACLE"))
+				exceptSql =	" MINUS (";
 
 
-		
-		
-		modNameInfoSql = modNameInfoSql + " order by c_name ";
+		String 	modNameInfoSql = " select " + parameters + " from "  + metadataSchema + tableName +  " where m_exclusion_cd is null and m_applied_path in ("
+					+ modifierSelect +") and c_fullname in ("	+ inclusionSql	+ exceptSql + exclusionSql 	+ ")) order by c_name ";
 	    
 		log.debug("MODnameInfo: " + modNameInfoSql + " " +compareName);
 		boolean obfuscatedUserFlag = Roles.getInstance().isRoleOfuscated(projectInfo);
@@ -1668,63 +1819,63 @@ public class ConceptDao extends JdbcDaoSupport {
 			throw e;
 		}
 		log.debug("result size = " + queryResult.size());
-		
-		
+
+
 		return queryResult;
 
 	}
-	
+
 	public List findModifierCodeInfo(final VocabRequestType vocabType, ProjectType projectInfo, DBInfoType dbInfo) throws DataAccessException, I2B2Exception{
 
 		// find return parameters
 		String parameters = NAME_DEFAULT;	
-		
+
 		if (vocabType.getType().equals("limited")){
 			parameters = MOD_LIMITED;
 		}
-		
+
 		else if (vocabType.getType().equals("core")){
 			parameters = MOD_CORE;
 		}
-		
+
 		else if (vocabType.getType().equals("all")){
 			parameters = MOD_CORE + ALL;
 		}
 		if(vocabType.isBlob() == true)
 			parameters = parameters + BLOB;
-				
+
 		String metadataSchema = dbInfo.getDb_fullSchema();
 		setDataSource(dbInfo.getDb_dataSource());
-		
+
 		String dbType = dbInfo.getDb_serverType();
-		
-//		log.info(metadataSchema);
-		
+
+		//		log.info(metadataSchema);
+
 		if (projectInfo.getRole().size() == 0)
 		{
 			log.error("no role found for this user in project: " + projectInfo.getName());
 			I2B2Exception e = new I2B2Exception("No role found for user");
 			throw e;
 		}
-		
+
 		Boolean protectedAccess = false;
 		Iterator it = projectInfo.getRole().iterator();
 		while (it.hasNext()){
-			 String role = (String) it.next();
-			 if(role.toUpperCase().equals("DATA_PROT")) {
-				 protectedAccess = true;
-				 break;
-			 }
+			String role = (String) it.next();
+			if(role.toUpperCase().equals("DATA_PROT")) {
+				protectedAccess = true;
+				break;
+			}
 		}
-		
+
 		//tableCd to table name conversion
 		ParameterizedRowMapper<String> map = new ParameterizedRowMapper<String>() {
-	        public String mapRow(ResultSet rs, int rowNum) throws SQLException {
-	            String name = (rs.getString("c_table_name"));
-	            return name;
-	        }
+			public String mapRow(ResultSet rs, int rowNum) throws SQLException {
+				String name = (rs.getString("c_table_name"));
+				return name;
+			}
 		};
-		
+
 		//extract table code
 		String tableCd = StringUtil.getTableCd(vocabType.getSelf());
 		String tableName=null;
@@ -1749,7 +1900,7 @@ public class ConceptDao extends JdbcDaoSupport {
 		String hidden = "";
 		if(vocabType.isHiddens() == false)
 			hidden = " and c_visualattributes not like '_H%'";
-	
+
 		String synonym = "";
 		if(vocabType.isSynonyms() == false)
 			synonym = " and c_synonym_cd = 'N'";
@@ -1760,58 +1911,85 @@ public class ConceptDao extends JdbcDaoSupport {
 		if(value.contains("'")){
 			value = vocabType.getMatchStr().getValue().replaceAll("'", "''");
 		}
-		 String whereClause = null;
-			
-		    if(vocabType.getMatchStr().getStrategy().equals("exact")) {
-		    	whereClause = " where upper(c_basecode) = '" + value.toUpperCase()+ "'";
-		    }
-		    
-		    else if(vocabType.getMatchStr().getStrategy().equals("left")){
-		    	whereClause = " where upper(c_basecode) like '" + value.toUpperCase() + "%'";
-		    }
-		    
-		    else if(vocabType.getMatchStr().getStrategy().equals("right")) {
-		    	value = value.replaceFirst(":", ":%");
-		    	whereClause = " where upper(c_basecode) like '%" +  value.toUpperCase() + "'";
-		    }
-		    
-		    else if(vocabType.getMatchStr().getStrategy().equals("contains")) {
-		    	value = value.replaceFirst(":", ":%");
-		    	whereClause = " where upper(c_basecode) like '%" + value.toUpperCase() + "%'";
-		    }
+		String whereClause = null;
 
-	//	log.debug(vocabType.getMatchStr().getStrategy() + whereClause);
-		
-		
-		String codeInfoSql = "select " + parameters + " from " + metadataSchema + tableName ;
-		String path = StringUtil.escapeBackslash(StringUtil.getLiteralPath(vocabType.getSelf()), dbInfo.getDb_serverType());
-		String modAppliedPath = " and m_applied_path = '" + path + "' ";;
-		String modCodeInfoSql = codeInfoSql + whereClause +  modAppliedPath + hidden + synonym;
-		while (path.length() > 3) {
-			if(path.endsWith("%")){
-				path = path.substring(0, path.length()-2);
-				path = path.substring(0, path.lastIndexOf("\\") + 1) + "%";			
+		if(vocabType.getMatchStr().getStrategy().equals("exact")) {
+			whereClause = " where upper(c_basecode) = '" + value.toUpperCase()+ "'";
+		}
+
+		else if(vocabType.getMatchStr().getStrategy().equals("left")){
+			whereClause = " where upper(c_basecode) like '" + value.toUpperCase() + "%'";
+		}
+
+		else if(vocabType.getMatchStr().getStrategy().equals("right")) {
+			value = value.replaceFirst(":", ":%");
+			whereClause = " where upper(c_basecode) like '%" +  value.toUpperCase() + "'";
+		}
+
+		else if(vocabType.getMatchStr().getStrategy().equals("contains")) {
+			value = value.replaceFirst(":", ":%");
+			whereClause = " where upper(c_basecode) like '%" + value.toUpperCase() + "%'";
+		}
+
+		String codeInfoSql = "select c_fullname from " + metadataSchema + tableName + whereClause;
+
+
+		String modifierPath = StringUtil.escapeBackslash(StringUtil.getLiteralPath(vocabType.getSelf()), dbInfo.getDb_serverType());
+		if(modifierPath.contains("'")){
+			modifierPath = modifierPath.replaceAll("'", "''");
+		}
+		String appliedPath   = " and m_applied_path = '" + modifierPath + "' ";
+		String inclusionSql = codeInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is null ";
+		 String modifierSelect = "'" +	modifierPath + "'";
+		while (modifierPath.length() > 3) {
+			if(modifierPath.endsWith("%")){
+				modifierPath = modifierPath.substring(0, modifierPath.length()-2);
+				modifierPath = modifierPath.substring(0, modifierPath.lastIndexOf("\\") + 1) + "%";			
 			}
 			else
-				path = path + "%";
-			modAppliedPath = " and m_applied_path = '" + StringUtil.escapeBackslash(path, dbInfo.getDb_serverType())  + "' ";
-			modCodeInfoSql = modCodeInfoSql + " union all " + codeInfoSql + whereClause + modAppliedPath + hidden + synonym;
+				modifierPath = modifierPath + "%";
+			modifierSelect = modifierSelect + ", '" + modifierPath + "'";
+			appliedPath = " and m_applied_path = '" + modifierPath + "' ";
+			inclusionSql = inclusionSql + " union all " + codeInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is null ";
 		}
+
+		String exclusionSql = codeInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is not null";
+		modifierPath = StringUtil.escapeBackslash(StringUtil.getLiteralPath(vocabType.getSelf()), dbInfo.getDb_serverType());
+		if(modifierPath.contains("'")){
+			modifierPath = modifierPath.replaceAll("'", "''");
+		}
+		while (modifierPath.length() > 3) {
+			if(modifierPath.endsWith("%")){
+				modifierPath = modifierPath.substring(0, modifierPath.length()-2);
+				modifierPath = modifierPath.substring(0, modifierPath.lastIndexOf("\\") + 1) + "%";			
+			}
+			else
+				modifierPath = modifierPath + "%";
+			appliedPath = " and m_applied_path = '" + modifierPath + "' ";
+			exclusionSql = exclusionSql + " union all " + codeInfoSql + appliedPath + hidden + synonym + " and m_exclusion_cd is not null ";
+		}
+
+		String exceptSql =  " EXCEPT (";
+		if(dbInfo.getDb_serverType().toUpperCase().equals("ORACLE"))
+			exceptSql =	" MINUS (";
+
+
+		String 	modCodeInfoSql = " select " + parameters + " from "  + metadataSchema + tableName +  " where m_exclusion_cd is null and m_applied_path in ("
+				 + modifierSelect +") and c_fullname in (" 	+ inclusionSql	+ exceptSql + exclusionSql 	+ ")) order by c_name ";
+
 
 		log.debug("MODCodeInfo " + modCodeInfoSql);
 		boolean obfuscatedUserFlag = Roles.getInstance().isRoleOfuscated(projectInfo);
 		ParameterizedRowMapper<ModifierType> modMapper = getModMapper(new NodeType(vocabType),obfuscatedUserFlag, dbInfo.getDb_serverType());
+        List queryResult = null;
+        try {
+            queryResult = jt.query(modCodeInfoSql, modMapper);
+        } catch (DataAccessException e) {
+            log.error(e.getMessage());
+            throw e;
+        }
+        log.debug("result size = " + queryResult.size());
 
-		List queryResult = null;
-		try {
-			queryResult = jt.query(modCodeInfoSql, modMapper);
-		} catch (DataAccessException e) {
-			log.error(e.getMessage());
-			throw e;
-		}
-		log.debug("result size = " + queryResult.size());
-
-		return queryResult;
-
-	}
+        return queryResult;
+	} 
 }

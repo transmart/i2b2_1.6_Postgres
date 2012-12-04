@@ -43,6 +43,8 @@ public class PagingHandler extends CRCDAO {
 	PageMethod pageMethod = null;
 	Map projectParamMap = null;
 	Map<String,XmlValueType> modifierMetadataXmlMap = null; 
+	
+	
 
 	public static final String TOTAL_OBSERVATION = "TOTAL_OBSERVATION";
 	public static final String MAX_INPUT_LIST = "MAX_INPUT_LIST";
@@ -68,6 +70,8 @@ public class PagingHandler extends CRCDAO {
 		this.modifierMetadataXmlMap = modifierMetadataXmlMap;
 	}
 	
+	
+	
 
 	public long getTotal(int maxInputList) throws SQLException, I2B2Exception {
 
@@ -92,7 +96,7 @@ public class PagingHandler extends CRCDAO {
 			countClause = " COUNT_BIG(*) ";
 			factRelatedHandler = new SQLServerFactRelatedQueryHandler(
 					dataSourceLookup, inputList, filterList, outputOptionList);
-		} 
+		}
 		factRelatedHandler.setProjectParamMap(this.projectParamMap);
 		factRelatedHandler.setModifierMetadataXmlMap(this.modifierMetadataXmlMap);
 		
@@ -118,11 +122,15 @@ public class PagingHandler extends CRCDAO {
 			}
 
 			sqlCountList.add(sqlParamCount);
+			String totalSql = pageTotalDao.buildTotalSql(factRelatedHandler,
+					singlePanel);
+			if (totalSql.trim().length() == 0) { 
+				continue;
+			}
 			panelSqlList.add("SELECT "
 					+ countClause
 					+ " from ( "
-					+ pageTotalDao.buildTotalSql(factRelatedHandler,
-							singlePanel) + " ) " + countSqlFrom + " totalsql");
+					+ totalSql + " ) " + countSqlFrom + " totalsql");
 		}
 
 		totalObservations = pageTotalDao.getTotalForAllPanel(panelSqlList,
@@ -190,6 +198,9 @@ public class PagingHandler extends CRCDAO {
 
 			panelSql = pageTotalDao.buildTotalSql(factRelatedHandler,
 					singlePanel);
+			if (panelSql.length() ==0) { 
+				continue;
+			}
 			String minSql = inputOptionListHandler
 					.generateMinIndexSql(panelSql);
 			System.out.println("min sql for panel " + minSql);

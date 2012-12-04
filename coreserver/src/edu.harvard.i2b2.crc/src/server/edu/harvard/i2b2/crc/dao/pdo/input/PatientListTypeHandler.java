@@ -78,7 +78,7 @@ public class PatientListTypeHandler extends CRCDAO implements
 	public void setMaxIndex(int maxIndex) {
 		patientListType.setMax(maxIndex);
 	}
-	
+
 	/**
 	 * Function to generate "where" clause for patient list
 	 */

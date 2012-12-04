@@ -1,0 +1,298 @@
+@charset "UTF-8";
+/* CSS Document */
+ 
+p {
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Calibri;
+}
+p.docTitle, li.docTitle, div.docTitle {
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:12.0pt;
+	margin-left:0in;
+	font-size:20.0pt;
+	font-family:Calibri;
+	text-transform:uppercase;
+	font-weight:bold;
+}
+h1 {
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:Cambria;
+	color:#365F91;
+	text-transform:uppercase;
+	font-weight:bold;
+}
+h2 {
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	page-break-after:avoid;
+	border:none;
+	padding:0in;
+	font-size:16.0pt;
+	font-family:Cambria;
+	color:#365F91;
+	font-weight:bold;
+}
+h3 {
+	margin-top:10.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	page-break-after:avoid;
+	font-size:14.0pt;
+	font-family:Cambria;
+	font-weight:bold;
+}
+h4 {
+	margin-top:10.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	page-break-after:avoid;
+	font-size:14.0pt;
+	font-family:Cambria;
+	font-weight:normal;
+}
+h5 {
+	margin-top:10.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	page-break-after:avoid;
+	font-size:12.0pt;
+	font-family:Cambria;
+	font-variant:small-caps;
+	font-weight:bold;
+	font-style:italic;
+}
+h6 {
+	margin-top:10.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	font-size:12.0pt;
+	font-family:Cambria;
+	font-weight:bold;
+}
+address {
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Calibri;
+	font-style:italic;
+}
+a:link, span.Hyperlink {
+	color:blue;
+	text-decoration:underline;
+}
+a:visited, span.HyperlinkFollowed {
+	color:purple;
+	text-decoration:underline;
+}
+p.Caption, li.Caption, div.Caption {
+	margin-top:6.0pt;
+	margin-right:0in;
+	margin-bottom:6.0pt;
+	margin-left:0in;
+	font-size:10.0pt;
+	font-family:Calibri;
+	font-weight:bold;
+}
+code {
+	margin-top:3.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:.75in;
+	font-size:9.0pt;
+	font-family:Verdana;
+}
+kbd {
+	font-family:Calibri;
+}
+pre {
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:10.0pt;
+	font-family:Calibri;
+}
+samp {
+	font-family:Calibri;
+}
+tt {
+	font-family:Calibri;
+}
+p.ImportantHeading, li.ImportantHeading, div.ImportantHeading {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	text-indent:-.25in;
+	font-size:11.0pt;
+	font-family:Calibri;
+	color:navy;
+	font-weight:bold;
+	font-style:italic;
+}
+p.NoteHeading, li.NoteHeading, div.NoteHeading {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0.5in;
+	margin-bottom:0.0001pt;
+	text-indent:0.25in;
+	font-size:11pt;
+	font-family:Calibri;
+	color:navy;
+	font-weight:bold;
+	font-style:italic;
+}
+p.Tip, li.Tip, div.Tip {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	text-indent:-.25in;
+	font-size:10.0pt;
+	font-family:Calibri;
+	color:navy;
+	font-style:italic;
+}
+p.WarningHeading, li.WarningHeading, div.WarningHeading {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	text-indent:-.25in;
+	font-size:11.0pt;
+	font-family:Calibri;
+	color:red;
+	font-style:italic;
+}
+p.VersionDoc, li.VersionDoc, div.VersionDoc {
+	margin-top:3.0pt;
+	margin-right:0in;
+	margin-bottom:3.0pt;
+	margin-left:0in;
+	text-align:right;
+	font-size:9.0pt;
+	font-family:Calibri;
+	font-style:italic;
+}
+ @page Section1 {
+	size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;
+}
+div.Section1 {
+	page:Section1;
+}
+/* Tables */
+ 
+Table {
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:8.0pt;
+	font-family:Verdana;
+	
+
+/* Table of Contents */
+
+p.TocHeading, li.TocHeading, div.TocHeading {
+ margin-top:12.0pt;
+ margin-right:0in;
+ margin-bottom:12.0pt;
+ margin-left:0in;
+ border:none;
+ padding:0in;
+ font-size:12.0pt;
+ font-family:Helvetica;
+ font-weight:bold;
+}
+p.Toc1, li.Toc1, div.Toc1 {
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:14.0pt;
+	font-family:Calibri;
+}
+p.Toc2, li.Toc2, div.Toc2 {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:12.0pt;
+	margin-bottom:.0001pt;
+	font-size:12.0pt;
+	font-family:Calibri;
+}
+p.Toc3, li.Toc3, div.Toc3 {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:24.0pt;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Calibri;
+}
+p.Toc4, li.Toc4, div.Toc4 {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Calibri;
+}
+p.Toc5, li.Toc5, div.Toc5 {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:48.0pt;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Calibri;
+}
+p.Toc6, li.Toc6, div.Toc6 {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:60.0pt;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:Calibri;
+}
+/* List Definitions */
+ol {
+	margin-top:6pt;
+	margin-right:0in;
+	margin-bottom:6pt;
+	margin-left:0.25in;
+	text-indent:.30in;
+	font-size:11pt;
+	font-family:Calibri;
+}
+ul {
+	margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0.25in;
+	margin-bottom:0.0001pt;
+	text-indent:.3in;
+	font-size:11pt;
+	font-family:Calibri;
+}

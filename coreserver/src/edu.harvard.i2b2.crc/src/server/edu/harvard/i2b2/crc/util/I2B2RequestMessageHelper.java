@@ -132,6 +132,22 @@ public class I2B2RequestMessageHelper {
 		return timeOut;
 
 	}
+	
+	public String getVersion() { 
+		RequestMessageType requestMessageType = (RequestMessageType) jaxbElement
+				.getValue();
+		String version = "";
+		if (requestMessageType.getMessageHeader().getSendingApplication() != null) {
+			version = requestMessageType.getMessageHeader().getSendingApplication().getApplicationVersion(); 
+			if (version == null) { 
+				version = "";
+			} else  {
+				version = version.trim();
+			}
+		}
+		
+		return version;
+	}
 
 	public static String getAnalysisDefinitionXml(
 			AnalysisDefinitionType analysisDefinition) throws JAXBUtilException {

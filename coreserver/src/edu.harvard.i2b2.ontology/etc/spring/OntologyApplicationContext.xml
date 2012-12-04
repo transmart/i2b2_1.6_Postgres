@@ -9,7 +9,7 @@
 
 <bean id="appType" class="edu.harvard.i2b2.ontology.datavo.i2b2message.ApplicationType">
     <property name="applicationName" value="edu.harvard.i2b2.ontology"/>
-    <property name="applicationVersion" value="1.5"/>
+    <property name="applicationVersion" value="1.601"/>
   </bean>
   
  

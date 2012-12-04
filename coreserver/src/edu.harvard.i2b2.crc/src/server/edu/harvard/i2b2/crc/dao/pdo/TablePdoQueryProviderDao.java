@@ -134,7 +134,7 @@ public class TablePdoQueryProviderDao extends CRCDAO implements
 					+ "provider_dimension provider where provider_id in (select distinct char_param1 from "
 					+ factTempTable + ") order by provider_path";
 			log.debug("Executing SQL [" + finalSql + "]");
-			System.out.println("Final Sql " + finalSql);
+			
 
 			query = conn.prepareStatement(finalSql);
 
@@ -179,7 +179,7 @@ public class TablePdoQueryProviderDao extends CRCDAO implements
 
 		PreparedStatement stmt = conn.prepareStatement(totalSql);
 
-		System.out.println(totalSql + " [ " + sqlParamCount + " ]");
+		log.debug(totalSql + " [ " + sqlParamCount + " ]");
 		if (inputOptionListHandler.isCollectionId()) {
 			for (int i = 1; i <= sqlParamCount; i++) {
 				stmt.setInt(i, Integer.parseInt(inputOptionListHandler

@@ -83,6 +83,8 @@ public interface IFactRelatedQueryHandler {
 	public void setProjectParamMap(Map projectParamMap);
 	
 	public void setModifierMetadataXmlMap(Map<String,XmlValueType> modifierMetadataXmlMap) ;
+	
+	public void setRequestVersion(String requestVersion);
 		
 	
 }

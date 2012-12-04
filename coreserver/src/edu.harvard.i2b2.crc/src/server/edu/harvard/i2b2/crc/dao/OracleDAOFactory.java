@@ -8,9 +8,11 @@ import org.apache.commons.logging.LogFactory;
 import edu.harvard.i2b2.common.exception.I2B2DAOException;
 import edu.harvard.i2b2.common.exception.I2B2Exception;
 import edu.harvard.i2b2.common.util.ServiceLocator;
+import edu.harvard.i2b2.crc.dao.pdo.IMetadataDao;
 import edu.harvard.i2b2.crc.dao.pdo.IPageDao;
 import edu.harvard.i2b2.crc.dao.pdo.IPdoQueryEidDao;
 import edu.harvard.i2b2.crc.dao.pdo.IPdoQueryPidDao;
+import edu.harvard.i2b2.crc.dao.pdo.MetadataDao;
 import edu.harvard.i2b2.crc.dao.pdo.ObservationFactDao;
 import edu.harvard.i2b2.crc.dao.pdo.PageTotalDao;
 import edu.harvard.i2b2.crc.dao.pdo.PdoQueryConceptDao;
@@ -189,6 +191,10 @@ public class OracleDAOFactory implements IDAOFactory {
 		public IPdoQueryEidDao getPdoQueryEidDAO() {
 			return new PdoQueryEidDao(dataSourceLookup, dataSource);
 		}
+		
+		public IMetadataDao getMetadataDAO() {
+			return new MetadataDao(dataSourceLookup, dataSource);
+		}
 
 		public DataSourceLookup getDataSourceLookup() {
 			return dataSourceLookup;
@@ -197,7 +203,10 @@ public class OracleDAOFactory implements IDAOFactory {
 		public DataSourceLookup getOriginalDataSourceLookup() {
 			return orignalDataSourceLookup;
 		}
-
+		
+		public DataSource getDataSource() {
+			return this.dataSource;
+		}
 	}
 
 	public class OracleSetFinderDAOFactory implements SetFinderDAOFactory {
@@ -264,6 +273,10 @@ public class OracleDAOFactory implements IDAOFactory {
 
 		public DataSourceLookup getOriginalDataSourceLookup() {
 			return orignalDataSourceLookup;
+		}
+		
+		public DataSource getDataSource() {
+			return dataSource;
 		}
 
 		public IQueryResultTypeDao getQueryResultTypeDao() {

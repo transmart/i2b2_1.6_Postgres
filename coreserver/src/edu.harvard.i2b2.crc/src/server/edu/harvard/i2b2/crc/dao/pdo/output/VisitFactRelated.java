@@ -11,7 +11,10 @@ package edu.harvard.i2b2.crc.dao.pdo.output;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Iterator;
+import java.util.List;
 
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.OutputOptionType;
 
 /**
@@ -22,9 +25,27 @@ import edu.harvard.i2b2.crc.datavo.pdo.query.OutputOptionType;
  * @author rkuttan
  */
 public class VisitFactRelated extends FactRelated {
+	List<ParamType> metaDataParamList ; 
+	
 	public VisitFactRelated(OutputOptionType outputOptionType) {
 		super(outputOptionType);
 	}
+	
+	public void setMetaDataParamList(List<ParamType> metaDataParamList) { 
+		this.metaDataParamList = metaDataParamList; 
+	}
+    
+	 private String buildCustomSelectClause(String prefix) {
+	    	String detailSelectClause = " ";
+	    	for (Iterator<ParamType> iterator = this.metaDataParamList.iterator();iterator.hasNext();) { 
+	    		ParamType paramType = iterator.next();
+	    		detailSelectClause += prefix + "." + paramType.getColumn() + "  " + prefix + "_" + paramType.getColumn();
+	    		if (iterator.hasNext()) { 
+	    			detailSelectClause += " , ";
+	    		}
+	    	}
+	    	return detailSelectClause;
+	    }
 
 	public String getSelectClause() {
 		String selectClause = "";
@@ -33,7 +54,8 @@ public class VisitFactRelated extends FactRelated {
 			selectClause = " visit.encounter_num visit_encounter_num, visit.patient_num visit_patient_num ";
 
 			if (isSelectDetail()) {
-				selectClause += ", visit.inout_cd visit_inout_cd, visit.location_cd visit_location_cd, visit.location_path visit_location_path, visit.start_date visit_start_date,visit.end_date visit_end_date,visit.active_status_cd visit_active_status_cd ";
+				selectClause += ",  visit.start_date visit_start_date,visit.end_date visit_end_date ";
+				selectClause += "," +  buildCustomSelectClause("visit");
 			}
 
 			if (isSelectBlob()) {

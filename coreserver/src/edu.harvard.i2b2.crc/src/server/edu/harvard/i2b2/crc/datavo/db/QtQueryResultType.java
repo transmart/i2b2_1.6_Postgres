@@ -21,6 +21,7 @@ public class QtQueryResultType implements java.io.Serializable {
 	private Set<QtQueryResultInstance> qtQueryResultInstances = new HashSet<QtQueryResultInstance>(
 			0);
 
+	public final static String PATIENT_COUNT_XML = "PATIENT_COUNT_XML"; 
 	// Constructors
 
 	/** default constructor */

@@ -10,7 +10,7 @@
 
 <datasources>
   
-  <!-- sample oracle data source config  -->
+  <!-- sample postgres data source config  -->
   <local-tx-datasource>
     <jndi-name>QueryToolDemoDS</jndi-name>
     <connection-url>jdbc:postgresql://192.168.40.107:5432/rc_1_6_4_i2b2demodata</connection-url>

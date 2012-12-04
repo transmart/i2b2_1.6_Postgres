@@ -310,7 +310,7 @@ public class CallCRCUtil {
 		requestMessageType.setMessageHeader(messageHeaderType);
 
 		RequestHeaderType requestHeader = new RequestHeaderType();
-		requestHeader.setResultWaittimeMs(180000); //(3000);
+		requestHeader.setResultWaittimeMs(1800000); //(3000);
 		requestMessageType.setRequestHeader(requestHeader);
 		return requestMessageType;
 	}
@@ -341,7 +341,7 @@ public class CallCRCUtil {
 		requestMessageType.setMessageHeader(messageHeaderType);
 
 		RequestHeaderType requestHeader = new RequestHeaderType();
-		requestHeader.setResultWaittimeMs(180000); //3000);
+		requestHeader.setResultWaittimeMs(1800000); //3000);
 		requestMessageType.setRequestHeader(requestHeader);
 		return requestMessageType;
 	}
@@ -376,7 +376,7 @@ public class CallCRCUtil {
 		requestMessageType.setMessageHeader(messageHeaderType);
 
 		RequestHeaderType requestHeader = new RequestHeaderType();
-		requestHeader.setResultWaittimeMs(220000); //3000);
+		requestHeader.setResultWaittimeMs(1800000); //3000);
 		requestMessageType.setRequestHeader(requestHeader);
 		return requestMessageType;
 	}
@@ -412,7 +412,7 @@ public class CallCRCUtil {
 		requestMessageType.setMessageHeader(messageHeaderType);
 
 		RequestHeaderType requestHeader = new RequestHeaderType();
-		requestHeader.setResultWaittimeMs(180000); //(3000);
+		requestHeader.setResultWaittimeMs(1800000); //(3000);
 		requestMessageType.setRequestHeader(requestHeader);
 		return requestMessageType;
 	}
@@ -458,7 +458,7 @@ public class CallCRCUtil {
 		requestMessageType.setMessageHeader(messageHeaderType);
 
 		RequestHeaderType requestHeader = new RequestHeaderType();
-		requestHeader.setResultWaittimeMs(180000); //3000);
+		requestHeader.setResultWaittimeMs(1800000); //3000);
 		requestMessageType.setRequestHeader(requestHeader);
 		return requestMessageType;
 	}

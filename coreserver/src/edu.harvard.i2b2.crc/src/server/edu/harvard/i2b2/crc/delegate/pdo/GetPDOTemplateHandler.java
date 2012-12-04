@@ -13,17 +13,27 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
+import javax.ejb.CreateException;
 import javax.xml.bind.JAXBElement;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import edu.harvard.i2b2.common.exception.I2B2Exception;
+import edu.harvard.i2b2.common.util.ServiceLocatorException;
 import edu.harvard.i2b2.common.util.jaxb.JAXBUtilException;
+import edu.harvard.i2b2.crc.dao.pdo.MetaDataTypeMapper;
 import edu.harvard.i2b2.crc.datavo.CRCJAXBUtil;
 import edu.harvard.i2b2.crc.datavo.i2b2message.BodyType;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientDataType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.GetPDOTemplateRequestType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.PatientDataResponseType;
 import edu.harvard.i2b2.crc.delegate.RequestHandler;
+import edu.harvard.i2b2.crc.ejb.PdoQueryLocal;
+import edu.harvard.i2b2.crc.ejb.PdoQueryLocalHome;
 import edu.harvard.i2b2.crc.util.QueryProcessorUtil;
 
 /**
@@ -34,7 +44,9 @@ import edu.harvard.i2b2.crc.util.QueryProcessorUtil;
  */
 public class GetPDOTemplateHandler extends RequestHandler {
 	private GetPDOTemplateRequestType getPDOTemplateRequestType = null;
-
+	/** log **/
+	protected final Log log = LogFactory.getLog(getClass());
+	
 	/**
 	 * Constuctor which accepts i2b2 request message xml
 	 * 
@@ -64,10 +76,15 @@ public class GetPDOTemplateHandler extends RequestHandler {
 		BodyType bodyType = new BodyType();
 
 		try {
-			InputStream resourceAsStream = Thread.currentThread()
-					.getContextClassLoader().getResourceAsStream(
-							"pdo_template.xml");
+			InputStream resourceAsStream = getClass().getResourceAsStream("pdo_template.xml");
+					//.getContextClassLoader().getResourceAsStream(
+					//		"pdo_template.xml");
 
+			if (resourceAsStream == null)  { 
+				log.debug("Unable to read pdo_template.xml, the inputstream is null");
+			} else { 
+				log.debug("pdo_template.xml, the inputstream is not null");
+			}
 			// .currentThread()
 			// .getContextClassLoader()
 			// .getResourceAsStream(
@@ -80,6 +97,18 @@ public class GetPDOTemplateHandler extends RequestHandler {
 
 			PatientDataType patientDataType = (PatientDataType) pdoJaxb
 					.getValue();
+			
+			PdoQueryLocalHome pdoQueryLocalHome = qpUtil.getPdoQueryLocalHome();
+			PdoQueryLocal pdoQueryInfoLocal = pdoQueryLocalHome.create();
+			List<ParamType> patientParamList = pdoQueryInfoLocal.getPDOTemplate("patient_dimension",this.getDataSourceLookup(),false);
+			patientDataType.getPatientSet().getPatient().get(0).getParam().clear();
+			patientDataType.getPatientSet().getPatient().get(0).getParam().addAll(patientParamList);
+			
+			
+			List<ParamType> visitParamList = pdoQueryInfoLocal.getPDOTemplate("visit_dimension",this.getDataSourceLookup(),false);
+			patientDataType.getEventSet().getEvent().get(0).getParam().clear();
+			patientDataType.getEventSet().getEvent().get(0).getParam().addAll(visitParamList);
+			
 			PatientDataResponseType patientDataResponseType = new PatientDataResponseType();
 			patientDataResponseType.setPatientData(patientDataType);
 			edu.harvard.i2b2.crc.datavo.pdo.query.ObjectFactory objectFactory = new edu.harvard.i2b2.crc.datavo.pdo.query.ObjectFactory();
@@ -90,12 +119,19 @@ public class GetPDOTemplateHandler extends RequestHandler {
 		} catch (JAXBUtilException e) {
 			log.error("", e);
 			throw new I2B2Exception("", e);
+		} catch (ServiceLocatorException e) {
+			log.error("", e);
+			throw new I2B2Exception("", e);
+		} catch (CreateException e) {
+			log.error("", e);
+			throw new I2B2Exception("", e);
 		}
 		return bodyType;
 	}
 
 	private String convertStreamToString(InputStream is) {
 
+		
 		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 		StringBuilder sb = new StringBuilder();
 
@@ -116,4 +152,6 @@ public class GetPDOTemplateHandler extends RequestHandler {
 
 		return sb.toString();
 	}
+	
+	
 }

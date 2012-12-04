@@ -463,7 +463,8 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 				sql = "select count(*) from " + dbInfoType.getDb_fullSchema()
 				+ "ONT_PROCESS_STATUS where process_type_cd = ? and start_date > " +
 				" to_date('" + sqlFormatedStartDate +  "', 'DD-MM-YYYY HH24:MI:SS') ";
-			} else if(dbInfoType.getDb_serverType().equalsIgnoreCase("SQLSERVER")){ 
+			}
+			else if(dbInfoType.getDb_serverType().equalsIgnoreCase("SQLSERVER")){ 
 				SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 
 				String sqlFormatedStartDate = dateFormat.format(date2.getTime());
@@ -620,7 +621,7 @@ public class OntProcessStatusDao extends JdbcDaoSupport {
 						ontProcessStatusType.getMessage(), new Date(System.currentTimeMillis()), "C" };
 
 			} else if (dbInfo.getDb_serverType().equalsIgnoreCase(
-					"ORACLE")) {
+			"ORACLE")) {
 				processId = jdbc.queryForInt(SEQUENCE_ORACLE);
 				ontProcessStatusType.setProcessId(String
 						.valueOf(processId));

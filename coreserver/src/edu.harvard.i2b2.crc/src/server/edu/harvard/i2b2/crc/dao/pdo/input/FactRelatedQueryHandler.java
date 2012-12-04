@@ -30,6 +30,7 @@ import edu.harvard.i2b2.common.exception.I2B2Exception;
 import edu.harvard.i2b2.common.util.db.JDBCUtil;
 import edu.harvard.i2b2.common.util.xml.XMLOperatorLookup;
 import edu.harvard.i2b2.crc.dao.CRCDAO;
+import edu.harvard.i2b2.crc.dao.DAOFactoryHelper;
 import edu.harvard.i2b2.crc.dao.pdo.I2B2PdoFactory;
 import edu.harvard.i2b2.crc.dao.pdo.PdoQueryHandler;
 import edu.harvard.i2b2.crc.dao.pdo.RPDRPdoFactory;
@@ -143,6 +144,7 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 	
 	private Map projectParamMap = null;
 	private Map<String,XmlValueType> modifierMetadataXmlMap = null;
+	private String requestVersion = "";
 
 	/**
 	 * Constructor with parameter
@@ -189,7 +191,10 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 		this.modifierMetadataXmlMap = modifierMetadataXmlMap;
 	}
 	
-
+	public void setRequestVersion(String requestVersion) { 
+		this.requestVersion = requestVersion;
+	}
+	
 	public List<String> getPanelSqlList() {
 		return this.panelSqlList;
 	}
@@ -233,6 +238,9 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 					// generate sql
 					String querySql = buildQuery(panel,
 							PdoQueryHandler.PLAIN_PDO_TYPE);
+					if (querySql.trim().length() == 0 ) { 
+						continue;
+					}
 					log.debug("Executing sql[" + querySql + "]");
 					panelSqlList.add(querySql);
 					// execute fullsql
@@ -315,9 +323,13 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 				observationSetList.add(buildPDOFact(resultSet, ""));
 			} else {
 				for (PanelType panel : filterList.getPanel()) {
+					
 					// generate sql
 					String querySql = buildQuery(panel,
 							PdoQueryHandler.TABLE_PDO_TYPE);
+					if (querySql.trim().length() == 0 ) { 
+						continue;
+					}
 					log.debug("Executing sql[" + querySql + "]");
 					panelSqlList.add(querySql);
 					sqlParamCount = panel.getItem().size();
@@ -485,6 +497,9 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 				factByConceptSql = factQueryWithDimensionFilter(
 						obsFactSelectClause, tableLookupJoinClause,
 						fullWhereClause, panel);
+				if (factByConceptSql.trim().length()==0) { 
+					return "";
+				}
 				mainQuerySql += factByConceptSql;
 			} else {
 				factWithoutFilterSql = factQueryWithoutFilter(
@@ -519,6 +534,12 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 				mainQuerySql += " AND seqNumber " + totOccuranceOperator
 						+ totOcurranceValue;
 			}
+			
+			//check for version 1.5, if so return the fact without the duplicates in modifier_cd and instance num
+			//if (this.requestVersion.startsWith("1.5")) { 
+			//mainQuerySql = " select * from (select *, rank() over(partition by obs_encounter_num, obs_patient_num,obs_concept_cd,obs_start_date,obs_provider_id order by obs_modifier_cd,obs_instance_num ) ordernum " +
+			//		" from ( " + mainQuerySql + ") ordersql   ) ordersql1 where ordernum = 1 ";
+			//}
 		}
 
 		return mainQuerySql;
@@ -557,6 +578,10 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 		if (panel.getTotalItemOccurrences() != null) {
 			totalItemOccurance = panel.getTotalItemOccurrences().getValue();
 		}
+		
+		int panelAccuracyScale = panel.getPanelAccuracyScale();
+		//ignore panel accuracy scale value bcos the function is reverted
+		panelAccuracyScale = 0;
 
 		String panelDateConstrain = null;
 		// generate panel date constrain
@@ -567,9 +592,17 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 		}
 
 		for (ItemType item : panel.getItem()) {
+			
 			if (item.getFacttablecolumn() != null
 					|| item.getDimColumnname() != null || item.getItemKey().toLowerCase().startsWith(ItemKeyUtil.ITEM_KEY_MASTERID)) {
 
+				if (item.getDimTablename() != null) {
+						if (item.getDimTablename().equalsIgnoreCase("patient_dimension") ||
+								item.getDimTablename().equalsIgnoreCase("visit_dimension")) { 
+						continue;
+					}
+				}
+					
 				// read the first item
 				// ItemType item = panel.getItem().get(0);
 
@@ -583,7 +616,8 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 					}
 				}
 
-				factByProviderSql += (" SELECT /*+ index (obs OBFACT_PATCON_SDED_NVTV_IDX)*/ "
+				factByProviderSql += (" SELECT  "
+				//factByProviderSql += (" SELECT /*+ index (obs OBFACT_PATCON_SDED_NVTV_IDX)*/ " Recombinant change
 						+ obsFactSelectClause + " FROM \n");
 
 				// check if the item key has "patient_set_coll_id:XXXX" as
@@ -624,17 +658,22 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 				factByProviderSql += ", " + this.getDbSchemaName()
 						+ "observation_FACT obs \n";
 
+				String tempSqlClause = "",containsJoinSql = "";
+				
 				String fullWhereClause1 = fullWhereClause
 						+ (" AND obs." + item.getFacttablecolumn()
 								+ " = dimension." + item.getFacttablecolumn());
 
-				factByProviderSql += tableLookupJoinClause;
+				//factByProviderSql += tableLookupJoinClause;
+				tempSqlClause += tableLookupJoinClause;
 
-				factByProviderSql += (" WHERE \n" + fullWhereClause1 + "\n");
-				
+				//factByProviderSql += (" WHERE \n" + fullWhereClause1 + "\n");
+				tempSqlClause += (" WHERE \n" + fullWhereClause1 + "\n");
+						
 				//if output option has modifier option false, then select modifier_cd = '@'
 				if (outputOptionList.getObservationSet() != null && outputOptionList.getObservationSet().isWithmodifiers() == false) {
-					factByProviderSql += (" AND  obs.modifier_cd = '@' \n");
+					//factByProviderSql += (" AND  obs.modifier_cd = '@' \n");
+					tempSqlClause += (" AND  obs.modifier_cd = '@' \n");
 				}
 			
 				boolean itemConstrainValueFlag = false, modifierConstrainValueFlag = false;
@@ -646,7 +685,8 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 					String itemModifierConstrainSql = modifierConstrainUtil.constructModifierConstainClause(modifierConstrain);
 					if ((itemModifierConstrainSql != null)
 							&& (itemModifierConstrainSql.length() > 0)) {
-						factByProviderSql += (" AND (" + itemModifierConstrainSql + ")\n");
+						// factByProviderSql += (" AND (" + itemModifierConstrainSql + ")\n");
+						tempSqlClause += (" AND (" + itemModifierConstrainSql + ")\n");
 					}
 					if (modifierConstrain.getConstrainByValue() != null && 
 							modifierConstrain.getConstrainByValue().size()>0) { 
@@ -694,25 +734,35 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 					if (unitCdSwitchClause.length()>0) {
 						vh.setUnitCdConversionFlag(true, unitCdInClause, unitCdSwitchClause);
 					}
-					String valueConstrainSql = "" ;
+					String[] valueConstrainSql = new String[] {"",""} ;
 					if (itemConstrainValueFlag) { 
 						valueConstrainSql = vh
-							.constructValueConstainClause(item.getConstrainByValue());
+							.constructValueConstainClause(item.getConstrainByValue(),this.dataSourceLookup.getServerType(),this.getDbSchemaName(),panelAccuracyScale);
+						if (panelAccuracyScale>0) { 
+							containsJoinSql = valueConstrainSql[1];
+						}
 					}
-					String modifierConstrainValueSql = "";
+					String[] modifierConstrainValueSql = new String[]{"",""};
 					if (modifierConstrainValueFlag) { 
 						if (modifierUnitCdInClause.length()>0) { 
 							vh.setUnitCdConversionFlag(true, modifierUnitCdInClause, modifierUnitCdSwitchClause);
 						}
-						modifierConstrainValueSql = vh.constructValueConstainClause(buildItemValueConstrain(modifierConstrain.getConstrainByValue()));
+						modifierConstrainValueSql = vh.constructValueConstainClause(buildItemValueConstrain(modifierConstrain.getConstrainByValue()),this.dataSourceLookup.getServerType(),this.getDbSchemaName(),panelAccuracyScale);
+						if (panelAccuracyScale>0) { 
+							containsJoinSql += modifierConstrainValueSql[1];
+						}
 					}
 					
-					if ((valueConstrainSql != null
-							&& valueConstrainSql.length() > 0) || (modifierConstrainValueSql != null
-									&& modifierConstrainValueSql.length() > 0)) {
-						factByProviderSql += (" AND (" + valueConstrainSql + modifierConstrainValueSql +  ")\n");
+					if ((valueConstrainSql[0] != null
+							&& valueConstrainSql[0].length() > 0) || (modifierConstrainValueSql[0] != null
+									&& modifierConstrainValueSql[0].length() > 0)) {
+						// factByProviderSql += (" AND (" + valueConstrainSql + modifierConstrainValueSql +  ")\n");
+						tempSqlClause += (" AND (" + valueConstrainSql[0] + modifierConstrainValueSql[0] +  ")\n");
 					}
 				
+					factByProviderSql += containsJoinSql;
+					
+					factByProviderSql += tempSqlClause;
 
 				// add start and end date constrains
 
@@ -780,6 +830,10 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 			}
 		}
 
+		if (factByProviderSql.trim().length()<10) { 
+			return "";
+		}
+		
 		int invert = panel.getInvert();
 
 		if (invert == 1) {
@@ -801,7 +855,11 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 
 		// factByProviderSql += " ORDER BY
 		// obs.patient_num,obs.start_date,obs.concept_cd,obs.rowid) a \n";
-		factByProviderSql += "  ORDER BY 2,5,3,7,6) a \n";
+		if (this.requestVersion.startsWith("1.5")) { 
+			factByProviderSql += "  ) a \n";
+		} else { 
+			factByProviderSql += "  ORDER BY 2,5,3,7,6) a \n";
+		}
 
 		return factByProviderSql;
 	}
@@ -818,7 +876,8 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 	private String factQueryWithoutFilter(String obsFactSelectClause,
 			String tableLookupJoinClause, String fullWhereClause) {
 		String factSql = "SELECT  b.*, ROWNUM rnum FROM (\n";
-		factSql += (" SELECT /*+ index (obs OBFACT_PATCON_SDED_NVTV_IDX)*/ "
+		factSql += (" SELECT  "
+		//factSql += (" SELECT /*+ index (obs OBFACT_PATCON_SDED_NVTV_IDX)*/ " Recombinant change
 				+ obsFactSelectClause + " FROM " + this.getDbSchemaName() + "observation_FACT obs\n");
 
 		factSql += tableLookupJoinClause;
@@ -953,8 +1012,10 @@ public class FactRelatedQueryHandler extends CRCDAO implements
 						.isSelectBlob(), obsFactFactRelated.isSelectStatus());
 
 		while (rowSet.next()) {
-			ObservationType obsFactType = null;			
+			ObservationType obsFactType = null;
+
 			obsFactType = observationFactBuilder.buildObservationSet(rowSet);
+
 			if (obsFactFactRelated.isSelected()) {
 				currentObsFactSetType.getObservation().add(obsFactType);
 			}

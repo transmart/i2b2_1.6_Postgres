@@ -24,6 +24,8 @@ import edu.harvard.i2b2.crc.dao.IDAOFactory;
 import edu.harvard.i2b2.crc.datavo.i2b2message.BodyType;
 import edu.harvard.i2b2.crc.datavo.setfinder.query.MasterInstanceResultResponseType;
 import edu.harvard.i2b2.crc.datavo.setfinder.query.QueryDefinitionRequestType;
+import edu.harvard.i2b2.crc.datavo.setfinder.query.QueryInstanceType;
+import edu.harvard.i2b2.crc.datavo.setfinder.query.QueryStatusTypeType;
 import edu.harvard.i2b2.crc.datavo.setfinder.query.StatusType;
 import edu.harvard.i2b2.crc.delegate.RequestHandler;
 import edu.harvard.i2b2.crc.delegate.RequestHandlerDelegate;
@@ -43,7 +45,7 @@ import edu.harvard.i2b2.crc.util.QueryProcessorUtil;
 public class RunQueryInstanceFromQueryDefinitionHandler extends RequestHandler {
 	QueryDefinitionRequestType queryDefRequestType = null;
 	String requestXml = null;
-	boolean lockedoutFlag = false;
+	boolean lockedoutFlag = false,errorFlag = false;
 
 	/**
 	 * Constuctor which accepts i2b2 request message xml
@@ -99,11 +101,11 @@ public class RunQueryInstanceFromQueryDefinitionHandler extends RequestHandler {
 					+ getDataSourceLookup().getOwnerId();
 
 			List<String> roles = (List<String>) cache.getRoot().get(rolePath);
-			System.out.println("Roles from get " + rolePath);
+			log.debug("Roles from get " + rolePath);
 			if (roles != null) {
-				System.out.println("Roles from size " + roles.size());
+				log.debug("Roles from size " + roles.size());
 			} else {
-				System.out.println("Roles from get is null ");
+				log.debug("Roles from get is null ");
 			}
 
 			IDAOFactory daoFactory = daoFactoryHelper.getDAOFactory();
@@ -130,9 +132,20 @@ public class RunQueryInstanceFromQueryDefinitionHandler extends RequestHandler {
 					}
 				}
 			}
+			QueryInstanceType queryInstance = masterInstanceResponse.getQueryInstance();
+			QueryStatusTypeType statusType = queryInstance.getQueryStatusType();
+			if (statusType.getStatusTypeId() != null && statusType.getStatusTypeId().trim().equals("4")) { 
+				StatusType status =  new StatusType();
+				StatusType.Condition condition = new StatusType.Condition();
+				condition.setType("ERROR");
+				condition.setValue("ERROR");
+				status.getCondition().add(condition);
+				masterInstanceResponse.setStatus(status);
+				errorFlag = true;
+			}
 			// masterInstanceResponse.setStatus(this.buildCRCStausType(
 			// RequestHandlerDelegate.DONE_TYPE, "DONE"));
-
+			
 			// response = this.buildResponseMessage(requestXml, bodyType);
 		} catch (I2B2Exception e) {
 			masterInstanceResponse = new MasterInstanceResultResponseType();
@@ -155,5 +168,9 @@ public class RunQueryInstanceFromQueryDefinitionHandler extends RequestHandler {
 
 	public boolean getLockedoutFlag() {
 		return lockedoutFlag;
+	}
+	
+	public boolean getErrorFlag() { 
+		return errorFlag;
 	}
 }

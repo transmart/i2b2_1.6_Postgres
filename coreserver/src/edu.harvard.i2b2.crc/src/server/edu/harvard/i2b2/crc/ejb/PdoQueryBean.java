@@ -11,8 +11,12 @@ package edu.harvard.i2b2.crc.ejb;
 
 import java.io.StringWriter;
 import java.rmi.RemoteException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.ejb.CreateException;
@@ -33,7 +37,12 @@ import edu.harvard.i2b2.common.util.jaxb.JAXBUtilException;
 import edu.harvard.i2b2.crc.dao.DAOFactoryHelper;
 import edu.harvard.i2b2.crc.dao.IDAOFactory;
 import edu.harvard.i2b2.crc.dao.PatientDataDAOFactory;
+import edu.harvard.i2b2.crc.dao.pdo.DimensionTable;
+import edu.harvard.i2b2.crc.dao.pdo.IMetadataDao;
 import edu.harvard.i2b2.crc.dao.pdo.IObservationFactDao;
+import edu.harvard.i2b2.crc.dao.pdo.MetaDataTypeMapper;
+import edu.harvard.i2b2.crc.dao.pdo.MetadataDao;
+import edu.harvard.i2b2.crc.dao.pdo.MetadataDao.TableMetaData;
 import edu.harvard.i2b2.crc.dao.pdo.PdoQueryHandler;
 import edu.harvard.i2b2.crc.dao.pdo.input.IInputOptionListHandler;
 import edu.harvard.i2b2.crc.dao.pdo.input.OutputOptionFactRelatedHelper;
@@ -50,6 +59,7 @@ import edu.harvard.i2b2.crc.datavo.i2b2message.SecurityType;
 import edu.harvard.i2b2.crc.datavo.ontology.ConceptType;
 import edu.harvard.i2b2.crc.datavo.ontology.ModifierType;
 import edu.harvard.i2b2.crc.datavo.ontology.XmlValueType;
+import edu.harvard.i2b2.crc.datavo.pdo.ParamType;
 import edu.harvard.i2b2.crc.datavo.pdo.PatientDataType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.FilterListType;
 import edu.harvard.i2b2.crc.datavo.pdo.query.GetObservationFactByPrimaryKeyRequestType;
@@ -108,10 +118,14 @@ public class PdoQueryBean implements SessionBean {
 				.getDomainId(), dataSourceLookup.getProjectPath(),
 				dataSourceLookup.getOwnerId());
 		IDAOFactory daoFactory = helper.getDAOFactory();
+	
+		
 		IQueryPdoMasterDao queryPdoMasterDao = daoFactory
 				.getSetFinderDAOFactory().getQueryPdoMasterDAO();
 
 		savePdoQueryMaster(queryPdoMasterDao, requestXml);
+		
+		String version = getVersion(queryPdoMasterDao, requestXml);
 		// check if the user have the blob permission
 		boolean blobFlag = checkForBlob(getPDOFromInputListReqType);
 		if (blobFlag) {
@@ -126,98 +140,99 @@ public class PdoQueryBean implements SessionBean {
 		}
 		
 		// get unit cd conversion project param from cache 
-		ParamUtil paramUtil = new ParamUtil();
-		DataSourceLookup origDataSourceLookup = daoFactory.getPatientDataDAOFactory().getOriginalDataSourceLookup();
-		String unitCdConversionParam = paramUtil.getParam(origDataSourceLookup.getProjectPath(), origDataSourceLookup.getOwnerId(), 
-				origDataSourceLookup.getDomainId(), ParamUtil.CRC_ENABLE_UNITCD_CONVERSION);
-		
-		Map projectParamMap = null;
-		if (unitCdConversionParam != null) { 
-			projectParamMap = new HashMap();
-			projectParamMap.put(ParamUtil.CRC_ENABLE_UNITCD_CONVERSION, unitCdConversionParam.trim());
-			
-		}
+				ParamUtil paramUtil = new ParamUtil();
+				DataSourceLookup origDataSourceLookup = daoFactory.getPatientDataDAOFactory().getOriginalDataSourceLookup();
+				String unitCdConversionParam = paramUtil.getParam(origDataSourceLookup.getProjectPath(), origDataSourceLookup.getOwnerId(), 
+						origDataSourceLookup.getDomainId(), ParamUtil.CRC_ENABLE_UNITCD_CONVERSION);
+				
+				Map projectParamMap = null;
+				if (unitCdConversionParam != null) { 
+					projectParamMap = new HashMap();
+					projectParamMap.put(ParamUtil.CRC_ENABLE_UNITCD_CONVERSION, unitCdConversionParam.trim());
+					
+				}
 
 		// call ontology cell to get the item's metadata to build the query sql
 		FilterListType filterList = getPDOFromInputListReqType.getFilterList();
 		Map<String,XmlValueType> modifierMetadataXmlMap = new HashMap<String,XmlValueType>(); 
-		try {
-			CallOntologyUtil ontologyUtil = new CallOntologyUtil(requestXml);
-			
-			
-			// if regular concepts
-			for (PanelType panel : filterList.getPanel()) {
-				for (ItemType item : panel.getItem()) {
-					ConceptType conceptType = ontologyUtil.callOntology(item
-							.getItemKey());
-					log
-							.debug("fetching the metadata information from ontology ["
-									+ item.getItemKey() + "]");
-					if (conceptType != null) {
-						item.setDimDimcode(conceptType.getDimcode());
-						item.setDimColumnname(conceptType.getColumnname());
-						item.setDimOperator(conceptType.getOperator());
-						item.setDimTablename(conceptType.getTablename());
-						item.setFacttablecolumn(conceptType
-								.getFacttablecolumn());
-						item.setDimColumndatatype(conceptType
-								.getColumndatatype());
-						
-						if (conceptType.getMetadataxml() != null && conceptType.getMetadataxml().getAny().get(0) != null) {
-							MetadataxmlValueType metadataXmlType = new MetadataxmlValueType(); 
-							metadataXmlType.getContent().add(conceptType.getMetadataxml().getAny().get(0));
-							item.setMetadataxml(metadataXmlType);
-						}
-						
-						log.debug("metadata from ontology received for ["
-								+ item.getItemKey() + "]"
-								+ conceptType.getTablename());
-						
-						//check for modifier constrain and get modifier metadata
-						ItemType.ConstrainByModifier modifierConstrain = item.getConstrainByModifier();
-						if (modifierConstrain != null) { 
-							ItemMetaDataHandler itemMetaDataHandler = new ItemMetaDataHandler(requestXml);
-							String modifierKey = modifierConstrain.getModifierKey();
-							String modifierAppliedPath = modifierConstrain.getAppliedPath();
-							ModifierType modifierType = itemMetaDataHandler.getModifierDataFromOntologyCell(modifierKey, modifierAppliedPath);
-							copyModifierToItem(item,modifierType);
+		if (filterList != null) { 
+			try {
+				CallOntologyUtil ontologyUtil = new CallOntologyUtil(requestXml);
+				
+				
+				// if regular concepts
+				for (PanelType panel : filterList.getPanel()) {
+					for (ItemType item : panel.getItem()) {
+						ConceptType conceptType = ontologyUtil.callOntology(item
+								.getItemKey());
+						log
+								.debug("fetching the metadata information from ontology ["
+										+ item.getItemKey() + "]");
+						if (conceptType != null) {
+							item.setDimDimcode(conceptType.getDimcode());
+							item.setDimColumnname(conceptType.getColumnname());
+							item.setDimOperator(conceptType.getOperator());
+							item.setDimTablename(conceptType.getTablename());
+							item.setFacttablecolumn(conceptType
+									.getFacttablecolumn());
+							item.setDimColumndatatype(conceptType
+									.getColumndatatype());
 							
-							//cache the modifier metadat in the map
-							if (projectParamMap != null) { 
-								String unitConversionFlag = (String)projectParamMap.get(ParamUtil.CRC_ENABLE_UNITCD_CONVERSION);
-								if ( unitConversionFlag != null && unitConversionFlag.equals("ON")) {
-									if (modifierType.getMetadataxml() != null) {
-										log.debug("Adding modifier metadata xml to lookup map for modifier key" + modifierType.getKey() + modifierType.getAppliedPath() );
-										modifierMetadataXmlMap.put(modifierType.getKey()+modifierType.getAppliedPath(), modifierType.getMetadataxml());
+							if (conceptType.getMetadataxml() != null && conceptType.getMetadataxml().getAny().get(0) != null) {
+								MetadataxmlValueType metadataXmlType = new MetadataxmlValueType(); 
+								metadataXmlType.getContent().add(conceptType.getMetadataxml().getAny().get(0));
+								item.setMetadataxml(metadataXmlType);
+							}
+							
+							log.debug("metadata from ontology received for ["
+									+ item.getItemKey() + "]"
+									+ conceptType.getTablename());
+							
+							//check for modifier constrain and get modifier metadata
+							ItemType.ConstrainByModifier modifierConstrain = item.getConstrainByModifier();
+							if (modifierConstrain != null) { 
+								ItemMetaDataHandler itemMetaDataHandler = new ItemMetaDataHandler(requestXml);
+								String modifierKey = modifierConstrain.getModifierKey();
+								String modifierAppliedPath = modifierConstrain.getAppliedPath();
+								ModifierType modifierType = itemMetaDataHandler.getModifierDataFromOntologyCell(modifierKey, modifierAppliedPath);
+								copyModifierToItem(item,modifierType);
+								
+								//cache the modifier metadat in the map
+								if (projectParamMap != null) { 
+									String unitConversionFlag = (String)projectParamMap.get(ParamUtil.CRC_ENABLE_UNITCD_CONVERSION);
+									if ( unitConversionFlag != null && unitConversionFlag.equals("ON")) {
+										if (modifierType.getMetadataxml() != null) {
+											log.debug("Adding modifier metadata xml to lookup map for modifier key" + modifierType.getKey() + modifierType.getAppliedPath() );
+											modifierMetadataXmlMap.put(modifierType.getKey()+modifierType.getAppliedPath(), modifierType.getMetadataxml());
+										}
 									}
 								}
 							}
+							
+						} else {
+							log
+									.debug("Unable to get item's metadata from ontology cell ["
+											+ item.getItemKey() + "]");
 						}
-						
-					} else {
-						log
-								.debug("Unable to get item's metadata from ontology cell ["
-										+ item.getItemKey() + "]");
 					}
 				}
+			} catch (JAXBUtilException jaxEx) {
+				jaxEx.printStackTrace();
+				throw new I2B2Exception(
+						"Error in getting item's metadata from the ontology : "
+								+ jaxEx.getMessage(), jaxEx);
+			} catch (AxisFault e) {
+				e.printStackTrace();
+				throw new I2B2Exception(
+						"Error in getting item's metadata from the ontology : "
+								+ e.getMessage(), e);
+			} catch (XMLStreamException e) {
+				e.printStackTrace();
+				throw new I2B2Exception(
+						"Error in getting item's metadata from the ontology : "
+								+ e.getMessage(), e);
 			}
-		} catch (JAXBUtilException jaxEx) {
-			jaxEx.printStackTrace();
-			throw new I2B2Exception(
-					"Error in getting item's metadata from the ontology : "
-							+ jaxEx.getMessage(), jaxEx);
-		} catch (AxisFault e) {
-			e.printStackTrace();
-			throw new I2B2Exception(
-					"Error in getting item's metadata from the ontology : "
-							+ e.getMessage(), e);
-		} catch (XMLStreamException e) {
-			e.printStackTrace();
-			throw new I2B2Exception(
-					"Error in getting item's metadata from the ontology : "
-							+ e.getMessage(), e);
 		}
-
 		
 		PatientDataDAOFactory pdoDaoFactory = daoFactory
 				.getPatientDataDAOFactory();
@@ -248,7 +263,7 @@ public class PdoQueryBean implements SessionBean {
 				RangeType rangeType = PDOFactory.getRangeType(inputList);
 				rangeType.setMax(requestedMaxIndex);
 			}
-			
+
 			// before doing the paging, check if the output option list has
 			// observaion
 			OutputOptionFactRelatedHelper opFactRelatedHelper = new OutputOptionFactRelatedHelper(
@@ -285,6 +300,20 @@ public class PdoQueryBean implements SessionBean {
 					// requestedMinIndex + maxInputSize);
 				}
 			}
+			boolean tablePDO = false;
+			if (getPDOFromInputListReqType.getOutputOption().getNames() != null) {
+				if (getPDOFromInputListReqType.getOutputOption().getNames().name().equalsIgnoreCase(OutputOptionNameType.ASATTRIBUTES.name())) { 
+					tablePDO = true;
+				}
+			}
+			log.debug("PDO reading metadat for patient_dimension table");
+			//get patient dimension metadata
+			List<ParamType> patientMetaDataList = getPDOTemplate("patient_dimension",
+					dataSourceLookup, tablePDO);
+			//get visit dimension metadata
+			log.debug("PDO reading metadat for visit_dimension table");
+			List<ParamType> visitMetaDataList = getPDOTemplate("visit_dimension",
+					dataSourceLookup, tablePDO);
 
 			if ((ot != null)
 					&& ot.name().equalsIgnoreCase(
@@ -297,6 +326,8 @@ public class PdoQueryBean implements SessionBean {
 						getPDOFromInputListReqType.getOutputOption());
 				pdoQueryHandler.setProjectParamMap(projectParamMap);
 				pdoQueryHandler.setModifierMetadataXmlMap(modifierMetadataXmlMap);
+				pdoQueryHandler.setRequestVersion(version);
+				pdoQueryHandler.setDimensionMetaDataParamList(patientMetaDataList, visitMetaDataList);
 				pdoQueryHandler.processPDORequest();
 				patientDataType = pdoQueryHandler.getTablePdo();
 			} else {
@@ -308,6 +339,8 @@ public class PdoQueryBean implements SessionBean {
 						getPDOFromInputListReqType.getOutputOption());
 				pdoQueryHandler.setProjectParamMap(projectParamMap);
 				pdoQueryHandler.setModifierMetadataXmlMap(modifierMetadataXmlMap);
+				pdoQueryHandler.setRequestVersion(version);
+				pdoQueryHandler.setDimensionMetaDataParamList(patientMetaDataList, visitMetaDataList);
 				pdoQueryHandler.processPDORequest();
 				patientDataType = pdoQueryHandler.getPlainPdo();
 			}
@@ -321,6 +354,49 @@ public class PdoQueryBean implements SessionBean {
 		return patientDataResponseType;
 	}
 
+	/**
+	 * Function to get plain pdo from the given pdo request
+	 * 
+	 * @ejb.interface-method view-type="both"
+	 * @ejb.transaction type="Required"
+	 */
+	public List<ParamType> getPDOTemplate(String dimensionTableName,
+			DataSourceLookup dataSourceLookup,boolean tablePDOFlag) throws I2B2Exception {
+		
+		List<ParamType> paramList = new ArrayList<ParamType>();
+		
+		DAOFactoryHelper helper = new DAOFactoryHelper(dataSourceLookup
+				.getDomainId(), dataSourceLookup.getProjectPath(),
+				dataSourceLookup.getOwnerId());
+		IDAOFactory daoFactory = helper.getDAOFactory();
+	
+		//
+		MetaDataTypeMapper metaDataTypeMapper = new MetaDataTypeMapper();
+		IMetadataDao metadataDao = daoFactory.getPatientDataDAOFactory().getMetadataDAO();
+		try { 
+			Map optionalFieldMap = metadataDao.getMetadataForOptionalField(dimensionTableName);
+			MetadataDao.TableMetaData[] tableMetaDataList = (TableMetaData[]) optionalFieldMap.values().toArray(new MetadataDao.TableMetaData[]{});
+			metaDataTypeMapper.fillXmlDataType(tableMetaDataList,tablePDOFlag);
+			for (int i=0;i<tableMetaDataList.length;i++) { 
+				ParamType paramType = new ParamType(); 
+				paramType.setColumn(tableMetaDataList[i].column_name); 
+				paramType.setColumnDescriptor(tableMetaDataList[i].column_comment);
+				paramType.setType(tableMetaDataList[i].column_xml_type);
+				paramList.add(paramType); 
+				
+			}
+	
+			
+		} catch (Exception i2b2DaoEx) { 
+			i2b2DaoEx.printStackTrace();
+			throw new I2B2Exception(i2b2DaoEx.getMessage(), i2b2DaoEx);
+		}
+		
+		return paramList;
+	}
+	
+	
+	
 	private PageType buildPageType(int requestedMinIndex,
 			int requestedMaxIndex, int maxInputIndex, long totalSize,
 			long pageSize) {
@@ -528,6 +604,15 @@ public class PdoQueryBean implements SessionBean {
 		}
 		
 		queryPdoMasterDao.createPdoQueryMaster(queryMaster, strWriter.toString());
+	}
+	
+	private String getVersion(IQueryPdoMasterDao queryPdoMasterDao,
+			String requestXml) throws I2B2Exception {
+		QtQueryMaster queryMaster = new QtQueryMaster();
+
+		I2B2RequestMessageHelper requestMessageHelper = new I2B2RequestMessageHelper(
+				requestXml);
+		return requestMessageHelper.getVersion();
 	}
 	
 	private void copyModifierToItem(ItemType itemType, ModifierType modifierType) { 

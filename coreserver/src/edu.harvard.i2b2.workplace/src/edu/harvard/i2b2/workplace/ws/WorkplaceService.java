@@ -18,6 +18,7 @@ import edu.harvard.i2b2.workplace.datavo.i2b2message.ResponseMessageType;
 import edu.harvard.i2b2.workplace.delegate.AddChildHandler;
 import edu.harvard.i2b2.workplace.delegate.AnnotateChildHandler;
 import edu.harvard.i2b2.workplace.delegate.DeleteChildHandler;
+import edu.harvard.i2b2.workplace.delegate.ExportChildHandler;
 import edu.harvard.i2b2.workplace.delegate.GetFoldersByProjectHandler;
 import edu.harvard.i2b2.workplace.delegate.GetFoldersByUserIdHandler;
 import edu.harvard.i2b2.workplace.delegate.GetChildrenHandler;
@@ -329,6 +330,45 @@ public class WorkplaceService {
         return execute(new AnnotateChildHandler(annotateDataMsg), waitTime);
         
     }    
+
+    public OMElement exportChild(OMElement aexportNodeElement) throws Exception {
+    	log.debug("In export Child");
+    	OMElement returnElement = null;
+    	String workplaceDataResponse = null;
+    	String unknownErrorMessage = "Error message delivered from the remote server \n" +  
+    			"You may wish to retry your last action";
+    	
+    	if (aexportNodeElement == null) {
+    		log.error("Incoming Workplace request is null");
+    		
+			ResponseMessageType responseMsgType = MessageFactory.doBuildErrorResponse(null,
+					unknownErrorMessage);
+			workplaceDataResponse = MessageFactory.convertToXMLString(responseMsgType);
+    		return MessageFactory.createResponseOMElementFromString(workplaceDataResponse);
+    	}
+    	
+    	log.debug("Start of request string");
+    	ExportChildDataMessage exportDataMsg = new ExportChildDataMessage();
+    	String requestElementString = aexportNodeElement.toString();
+    	log.debug("created new string");
+    	exportDataMsg.setRequestMessageType(requestElementString);
+    	log.debug("set request messagetype");
+    	long waitTime = 0;
+    	if (exportDataMsg.getRequestMessageType() != null) {
+    		if (exportDataMsg.getRequestMessageType().getRequestHeader() != null) {
+    			waitTime = exportDataMsg.getRequestMessageType()
+    			.getRequestHeader()
+    			.getResultWaittimeMs();
+    		}
+    	}
+
+    	//do Workplace query processing inside thread, so that  
+    	// service could send back message with timeout error. 
+   //    ExecutorRunnable er = new ExecutorRunnable();        
+        return execute(new ExportChildHandler(exportDataMsg), waitTime);
+        
+    }    
+
     
     public OMElement addChild(OMElement addNodeElement) throws Exception {
     	OMElement returnElement = null;
@@ -368,7 +408,9 @@ public class WorkplaceService {
     private OMElement execute(RequestHandler handler, long waitTime)throws I2B2Exception{
         //do workplace processing inside thread, so that  
         // service could send back message with timeout error.  
-        	OMElement returnElement = null;
+    	log.debug("In execute");
+
+    	OMElement returnElement = null;
         	
         	String unknownErrorMessage = "Error message delivered from the remote server \n" +  
     		"You may wish to retry your last action";

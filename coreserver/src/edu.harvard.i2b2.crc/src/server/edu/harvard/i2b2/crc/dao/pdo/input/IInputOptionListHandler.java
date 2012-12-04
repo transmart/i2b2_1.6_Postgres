@@ -120,5 +120,5 @@ public interface IInputOptionListHandler {
 	 * @param maxIndex
 	 */
 	public void setMaxIndex(int maxIndex);
-	
+
 }

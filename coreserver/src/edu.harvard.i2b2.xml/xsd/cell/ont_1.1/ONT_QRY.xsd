@@ -21,7 +21,7 @@
     <xs:element name="get_term_info" type="ont:get_termInfoType"/>
     <xs:element name="get_name_info" type="ont:vocab_requestType"/>
     <xs:element name="get_code_info" type="ont:vocab_requestType"/>
-    <xs:element name="get_categories" type="ont:get_returnType"/>
+    <xs:element name="get_categories" type="ont:get_categoriesType"/>
     <xs:element name="get_schemes" type="ont:get_returnType"/>
     <xs:element name="delete_child" type="ont:delete_childType"/>
   	<xs:element name="update_crc_concept" type="ont:update_crc_conceptType"/>
@@ -85,6 +85,23 @@
         </xs:attribute>
         <xs:attribute name="blob" type="xs:boolean" default="false"/>
     </xs:complexType>
+    
+    <xs:complexType name="get_categoriesType">
+        <xs:attribute name="type" default="default">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="default"/>
+                    <xs:enumeration value="core"/>
+                    <xs:enumeration value="all"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="blob" type="xs:boolean" default="false"/>
+        <xs:attribute name="hiddens" type="xs:boolean" default="false"/>
+        <xs:attribute name="synonyms" type="xs:boolean" default="false"/>
+    </xs:complexType>
+    
+    
      
      <xs:complexType name="update_crc_conceptType">
     	 <xs:attribute name="operation_type" default="update_only">
@@ -95,6 +112,9 @@
                 </xs:restriction>
             </xs:simpleType>
         </xs:attribute>
+ 		<xs:attribute name="hiddens" type="xs:boolean" default="true"/>
+        <xs:attribute name="synonyms" type="xs:boolean" default="false"/>
+ 
      </xs:complexType>
     
     <xs:complexType name="update_concept_totalNumType">

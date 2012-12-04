@@ -141,8 +141,7 @@ public class MissingTermDAO extends CRCLoaderDAO implements IMissingTermDAO {
 						+ uploadConstrainSql + " group by obs1.concept_cd) f where rnum between " + startPos + " and "  + endPos ;
 			} else if (dataSourceLookup.getServerType().equalsIgnoreCase(
 					DataSourceLookupDAOFactory.ORACLE)) {
-				sql = " select tot, concept_cd, rnum from ( "
-						+ " select count(*) tot, obs1.concept_cd, rownum  rnum from "
+				sql = " select tot, concept_cd, rnum from (select count(*) tot, obs1.concept_cd, rownum  rnum from "
 						+ this.getDbSchemaName()
 						+ "observation_fact obs1 where  "
 						+ " concept_cd not in ( "

@@ -109,6 +109,8 @@ public class QueryPdoMasterSpringDao extends CRCDAO implements
 						+ "VALUES (?,?,?,?,?)";
 				this.setSql(INSERT_SQLSERVER);
 			}
+			this.dataSourceLookup = dataSourceLookup;
+
 			declareParameter(new SqlParameter(Types.VARCHAR));
 			declareParameter(new SqlParameter(Types.VARCHAR));
 			declareParameter(new SqlParameter(Types.TIMESTAMP));

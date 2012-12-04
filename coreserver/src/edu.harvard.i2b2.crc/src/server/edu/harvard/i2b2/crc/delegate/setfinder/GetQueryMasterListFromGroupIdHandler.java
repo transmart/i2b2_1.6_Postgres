@@ -72,7 +72,7 @@ public class GetQueryMasterListFromGroupIdHandler extends RequestHandler {
             log.debug(" EJB Diff mill =" + diffTimeMill + " diffTime =" +
                 diffTime);
             masterResponseType.setStatus(this.buildCRCStausType(RequestHandlerDelegate.DONE_TYPE, "DONE"));
-            System.out.println("Size of list " + masterResponseType.getQueryMaster().size());
+            log.debug("Size of list " + masterResponseType.getQueryMaster().size());
 //            ResponseMessageType responseMessageType = new ResponseMessageType();
 //            responseMessageType.setMessageBody(bodyType);
 //            responseString = getResponseString(responseMessageType);

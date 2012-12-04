@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://www.i2b2.org/xsd/cell/im/psm/1.1/">
+    
+  
+  
+  <xs:complexType name="create_patientsetRequestType">
+        <xs:all>
+            <xs:element name="query_name" type="xs:string"/>
+            <xs:element name="create_missing_mapping" type="xs:boolean"/>
+        </xs:all>
+    </xs:complexType>
+    
+</xs:schema>

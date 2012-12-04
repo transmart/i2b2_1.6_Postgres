@@ -179,19 +179,18 @@ public class PageTotalDao extends CRCDAO implements IPageDao {
 	private ResultSet executeTotalSql(String totalSql, Connection conn,
 			int sqlParamCount, IInputOptionListHandler inputOptionListHandler)
 			throws SQLException {
-		
+
 		PreparedStatement stmt = conn.prepareStatement(totalSql);
 		ResultSet resultSet = null;
-				
+
 		System.out.println(totalSql + " [ " + sqlParamCount + " ]");
-		if (inputOptionListHandler.isCollectionId()) { 
+		if (inputOptionListHandler.isCollectionId()) {
 			for (int i = 1; i <= sqlParamCount; i++) {
 				stmt.setInt(i, Integer.parseInt(inputOptionListHandler
 						.getCollectionId()));
 			}
 		}
-		
-		
+
 		resultSet = stmt.executeQuery();
 
 		return resultSet;

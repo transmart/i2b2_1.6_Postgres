@@ -17,7 +17,7 @@
 	
 	<bean id="appType" class="edu.harvard.i2b2.crc.loader.datavo.i2b2message.ApplicationType">
 		<property name="applicationName" value="edu.harvard.i2b2.crc.loader"/>
-		<property name="applicationVersion" value="1.6"/>
+		<property name="applicationVersion" value="1.601"/>
 	</bean>
 	
 	

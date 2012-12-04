@@ -17,7 +17,10 @@ import org.apache.commons.logging.LogFactory;
 
 import edu.harvard.i2b2.common.exception.I2B2Exception;
 import edu.harvard.i2b2.workplace.datavo.i2b2message.MessageHeaderType;
+import edu.harvard.i2b2.workplace.datavo.i2b2message.PasswordType;
+import edu.harvard.i2b2.workplace.datavo.i2b2message.SecurityType;
 import edu.harvard.i2b2.workplace.datavo.i2b2message.StatusType;
+import edu.harvard.i2b2.workplace.datavo.pm.CellDataType;
 import edu.harvard.i2b2.workplace.datavo.pm.ConfigureType;
 import edu.harvard.i2b2.workplace.datavo.pm.GetUserConfigurationType;
 import edu.harvard.i2b2.workplace.datavo.pm.ProjectType;
@@ -31,8 +34,14 @@ public abstract class RequestHandler {
     protected final Log log = LogFactory.getLog(getClass());
     public abstract String execute() throws I2B2Exception;
     private DBInfoType dbInfo;
+    private SecurityType securityType = null;
     
-    public ProjectType getRoleInfo(MessageHeaderType header) 
+    public SecurityType getSecurityType() {
+		return securityType;
+	}
+
+
+	public ProjectType getRoleInfo(MessageHeaderType header) 
     {
     	ProjectType projectType = null;
     	
@@ -70,7 +79,27 @@ public abstract class RequestHandler {
 				ConfigureType pmConfigure = msg.readUserInfo();
 				Iterator it = pmConfigure.getUser().getProject().iterator();
 				
+				//Set CRC Cell URL
+				for (CellDataType cell : pmConfigure.getCellDatas().getCellData())
+				{
+					if (cell.getId().equals("CRC"))
+					{
+						WorkplaceUtil.getInstance().setCRCEndpointReference(cell.getUrl());
+						break;
+					}
+					
+				}
 				
+				//Set Security Type
+				log.debug("Setting security type needed for CRC");
+				securityType = new SecurityType();
+				securityType.setDomain(pmConfigure.getUser().getDomain());
+				securityType.setUsername(pmConfigure.getUser().getUserName());
+				edu.harvard.i2b2.workplace.datavo.i2b2message.PasswordType ptype = new edu.harvard.i2b2.workplace.datavo.i2b2message.PasswordType();
+				ptype.setIsToken(pmConfigure.getUser().getPassword().isIsToken());
+				ptype.setTokenMsTimeout(pmConfigure.getUser().getPassword().getTokenMsTimeout());
+				ptype.setValue(pmConfigure.getUser().getPassword().getValue());
+				securityType.setPassword(ptype);
 				
 				while (it.hasNext())
 				{

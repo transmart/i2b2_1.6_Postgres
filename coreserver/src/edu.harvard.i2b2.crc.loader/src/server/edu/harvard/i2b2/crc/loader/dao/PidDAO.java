@@ -72,7 +72,6 @@ public class PidDAO extends CRCLoaderDAO implements IPidDAO {
 			callStmt.execute();
 			this.getSQLServerProcedureError(dataSourceLookup.getServerType(),
 					callStmt, 2);
-			
 		} catch (SQLException sqlEx) {
 			sqlEx.printStackTrace();
 			throw new I2B2Exception(

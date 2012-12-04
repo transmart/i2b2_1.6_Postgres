@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import edu.harvard.i2b2.common.exception.I2B2Exception;
+import edu.harvard.i2b2.common.util.db.JDBCUtil;
 import edu.harvard.i2b2.crc.dao.DAOFactoryHelper;
 
 /**
@@ -109,13 +110,16 @@ public class SqlClauseUtil {
 		}
 	}
 	
-	public static String handleMetaDataTextValue(String operator,String value) {
+	public static String handleMetaDataTextValue(String operator,String value) { 
 		String  formattedValue = value;
 		if ((operator != null)
 				&& (operator.toUpperCase().equals("LIKE"))) {
 			boolean needPercentFlag = false, needSlashFlag = false;
 			//if not enclosed in single quote
 			if (!SqlClauseUtil.isEnclosedinSingleQuote(formattedValue)) { 
+				//escape the single quote
+				formattedValue = JDBCUtil.escapeSingleQuote(formattedValue);
+				
 				// if missing \
 				if (formattedValue.lastIndexOf('%') != formattedValue.length() - 1) {
 					needPercentFlag = true; 
@@ -148,28 +152,17 @@ public class SqlClauseUtil {
 
 			}
 		} else if (operator.toUpperCase().equals("IN")) {
-			boolean needBracesFlag = false, needSingleQuoteFlag = false;
-			
 			formattedValue = value;
-			if (!SqlClauseUtil.isEnclosedinBraces(value)) { 
-				needBracesFlag = true;	
-			}
+			formattedValue = SqlClauseUtil.buildINClause(formattedValue, true);
+			formattedValue = "(" + formattedValue  + ")";
 			
-			// if not enclosed in '', add it
-			if (!SqlClauseUtil.isEnclosedinSingleQuote(value)) { 
-					needSingleQuoteFlag = true;
-			}
-			if (needSingleQuoteFlag) { 
-				formattedValue = "'" + formattedValue + "'";
-			}
-			
-			if (needBracesFlag) { 
-				formattedValue = "(" + formattedValue  + ")";
-			}
 		} else { 
 			boolean needSingleQuoteFlag = false;
 			
 			formattedValue = value;
+			//escape the single quote
+			formattedValue = JDBCUtil.escapeSingleQuote(formattedValue);
+			
 			
 			// if not enclosed in '', add it
 			if (!SqlClauseUtil.isEnclosedinSingleQuote(value)) { 

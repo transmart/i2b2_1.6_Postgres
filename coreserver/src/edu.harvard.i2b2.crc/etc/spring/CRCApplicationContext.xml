@@ -28,8 +28,8 @@
   </bean>
   
   <bean id="appType" class="edu.harvard.i2b2.crc.datavo.i2b2message.ApplicationType">
-    <property name="applicationName" value="edu.harvard.i2b2.crc"/>
-    <property name="applicationVersion" value="1.6"/>
+    <property name="applicationName" value="CRC Cell"/>
+    <property name="applicationVersion" value="1.601"/>
   </bean>
   
  
@@ -45,8 +45,8 @@
   </bean>
  
  <bean id="TestDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
-		<property name="url" value="jdbc:oracle:thin:@localhost:1521:XE"/>
+        <property name="driverClassName" value="org.postgresql.Driver"/>
+        <property name="url" value="jdbc:postgresql://127.0.0.1/transmart"/>
 		<property name="username" value="i2b2demodata"/>
 		<property name="password" value="i2b2demodata"/>
 	</bean>
@@ -62,9 +62,9 @@
 -->
  <bean id="CRCDataSourceLookup" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
                 <property name="driverClassName" value="org.postgresql.Driver"/>
-                <property name="url" value="jdbc:postgresql://192.168.40.107:5432/rc_1_6_4_i2b2hive"/>
+                <property name="url" value="jdbc:postgresql://127.0.0.1/transmart"/>
                 <property name="username" value="i2b2hive"/>
-                <property name="password" value="demouser"/>
+                <property name="password" value="i2b2hive"/>
         </bean>
 
   <bean name="defaultSetfinderResultType" class="java.lang.String">

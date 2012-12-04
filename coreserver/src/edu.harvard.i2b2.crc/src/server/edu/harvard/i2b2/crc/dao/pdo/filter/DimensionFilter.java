@@ -90,7 +90,10 @@ public class DimensionFilter {
 				dimCode = "(" + dimCode + ")";
 			} else {
 				if (dimColumnDataType.equalsIgnoreCase("T")) {
-					dimCode = "'" + dimCode + "'";
+					if (!SqlClauseUtil.isEnclosedinSingleQuote(dimCode)) {
+						dimCode = JDBCUtil.escapeSingleQuote(dimCode);
+						dimCode = "'" + dimCode + "'";
+					}
 				}
 			}
 

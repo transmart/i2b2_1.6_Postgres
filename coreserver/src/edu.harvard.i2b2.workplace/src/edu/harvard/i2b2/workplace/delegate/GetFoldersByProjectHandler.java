@@ -59,6 +59,21 @@ public class GetFoldersByProjectHandler extends RequestHandler {
 			log.debug("USER_INVALID or PM_SERVICE_PROBLEM");
 			return response;	
 		}
+		boolean managerRole = false;
+		for(String param :projectInfo.getRole()) {
+			if(param.equalsIgnoreCase("manager")) {
+				managerRole = true;
+				break;
+			}
+		}
+		if(managerRole == false) {
+			String response = null;
+			responseMessageType = MessageFactory.doBuildErrorResponse(getFoldersMsg.getMessageHeaderType(), "User does not have correct privileges");
+			response = MessageFactory.convertToXMLString(responseMessageType);
+			log.debug("USER DOES NOT HAVE MANAGER ROLE");
+			return response;	
+		}
+		
 		
 		List response = null;
 

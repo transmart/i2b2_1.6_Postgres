@@ -158,7 +158,13 @@
 			<xs:enumeration value="LE" />
 			<xs:enumeration value="IN" />
 			<xs:enumeration value="LIKE" />
+			<xs:enumeration value="LIKE[begin]" />
+			<xs:enumeration value="LIKE[end]" />
+			<xs:enumeration value="LIKE[contains]" />
+			<xs:enumeration value="LIKE[exact]" />
 			<xs:enumeration value="BETWEEN" />
+			<xs:enumeration value="CONTAINS" />
+			<xs:enumeration value="CONTAINS[database]" />
 		</xs:restriction>
 	</xs:simpleType>
 	
@@ -177,6 +183,7 @@
 		<xs:restriction base="xs:string">
 			<xs:enumeration value="NUMBER" />
 			<xs:enumeration value="TEXT" />
+			<xs:enumeration value="LARGETEXT" />
 			<xs:enumeration value="FLAG" />
 			<xs:enumeration value="MODIFIER" />
 		</xs:restriction>

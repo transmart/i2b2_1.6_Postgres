@@ -12,6 +12,6 @@ public interface IQueryExecutorDao {
 			int transactionTimeout, DataSourceLookup dsLookup,
 			SetFinderDAOFactory sfDAOFactory, String requestXml,
 			String sqlString, String queryInstanceId, String patientSetId,
-			ResultOutputOptionListType resultOutputList)
+			ResultOutputOptionListType resultOutputList, boolean allowLargeTextValueConstrainFlag)
 			throws CRCTimeOutException, I2B2DAOException;
 }

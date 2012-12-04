@@ -161,7 +161,7 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 		String sql = "select *  from " + getDbSchemaName()
 				+ "qt_query_result_instance where query_instance_id = ? ";
 		List<QtQueryResultInstance> queryResultInstanceList = jdbcTemplate
-				.query(sql, new Object[] { queryInstanceId }, patientSetMapper);
+				.query(sql, new Object[] { Integer.valueOf(queryInstanceId) }, patientSetMapper);
 		return queryResultInstanceList;
 	}
 
@@ -177,7 +177,7 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 		String sql = "select *  from " + getDbSchemaName()
 				+ "qt_query_result_instance where result_instance_id = ? ";
 		List<QtQueryResultInstance> queryResultInstanceList = jdbcTemplate
-				.query(sql, new Object[] { queryResultId }, patientSetMapper);
+				.query(sql, new Object[] { Integer.valueOf(queryResultId) }, patientSetMapper);
 		if (queryResultInstanceList.size() > 0) {
 			return queryResultInstanceList.get(0);
 		} else {
@@ -204,7 +204,7 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 				+ "qt_query_result_type rt where ri.query_instance_id = ? and ri.result_type_id = rt.result_type_id and rt.name=?";
 		QtQueryResultInstance queryResultInstanceList = (QtQueryResultInstance) jdbcTemplate
 				.queryForObject(sql,
-						new Object[] { queryInstanceId, resultName },
+						new Object[] { Integer.valueOf(queryInstanceId), resultName },
 						patientSetMapper);
 		return queryResultInstanceList;
 	}
@@ -372,6 +372,7 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 					+ "(RESULT_INSTANCE_ID, QUERY_INSTANCE_ID, RESULT_TYPE_ID, SET_SIZE,START_DATE,END_DATE,STATUS_TYPE_ID,DELETE_FLAG) "
 					+ "VALUES (?,?,?,?,?,?,?,?)";
 				SEQUENCE_POSTGRES = "select nextval('QT_SQ_QRI_QRIID')";
+                declareParameter(new SqlParameter(Types.INTEGER));
 				return;
 			}
 			
@@ -404,7 +405,7 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 			declareParameter(new SqlParameter(Types.TIMESTAMP));
 			declareParameter(new SqlParameter(Types.INTEGER));
 			declareParameter(new SqlParameter(Types.VARCHAR));
-			
+			this.dataSourceLookup = dataSourceLookup;
 
 			compile();
 		}
@@ -421,8 +422,8 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 				resultInstance.setResultInstanceId(String.valueOf(resultInstanceId));
 				
 				object = new Object[] {
-						resultInstance.getResultInstanceId(),
-						resultInstance.getQtQueryInstance().getQueryInstanceId(),
+						Integer.valueOf(resultInstance.getResultInstanceId()),
+						Integer.valueOf(resultInstance.getQtQueryInstance().getQueryInstanceId()),
 						resultInstance.getQtQueryResultType().getResultTypeId(),
 						resultInstance.getSetSize(),
 						resultInstance.getStartDate(),
@@ -476,8 +477,9 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 
 				resultInstance.setResultInstanceId(String
 						.valueOf(resultInstanceIdentityId));
-				System.out.println(resultInstanceIdentityId);
+				
 			}
+
 		}
 	}
 

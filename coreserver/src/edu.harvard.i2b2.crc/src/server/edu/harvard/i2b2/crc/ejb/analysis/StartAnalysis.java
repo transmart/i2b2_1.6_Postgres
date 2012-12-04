@@ -107,7 +107,7 @@ public class StartAnalysis implements StartAnalysisLocal {
 					analysisPlugin);
 
 			utx.commit();
-			System.out.print("query master saved1");
+			log.debug("query master saved [" + queryMasterId + "]");
 
 			// get run instance
 			utx.begin();
@@ -228,7 +228,7 @@ public class StartAnalysis implements StartAnalysisLocal {
 
 			TextMessage inMessage = (TextMessage) receiver.receive(timeout);
 			if (inMessage != null) {
-				System.out.println("Received text message from response queue"
+				log.info("Received text message from response queue"
 						+ inMessage.getText());
 
 			}

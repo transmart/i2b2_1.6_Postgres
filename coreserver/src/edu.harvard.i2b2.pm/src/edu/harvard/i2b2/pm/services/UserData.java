@@ -15,7 +15,15 @@ public class UserData {
     private String email = new String();
     private String status = new String();
     private Date changeDate = new Date();
+    private boolean isAdmin = false;
     
+    
+	public boolean isAdmin() {
+		return isAdmin;
+	}
+	public void setAdmin(boolean isAdmin) {
+		this.isAdmin = isAdmin;
+	}
 	public Date getChangeDate() {
 		return changeDate;
 	}

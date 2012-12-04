@@ -50,6 +50,7 @@
             <xs:extension base="crc:requestType">
                 <xs:sequence>
                     <xs:element name="query_master_id" type="xs:string"/>
+                    <xs:element name="query_name" type="xs:string"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

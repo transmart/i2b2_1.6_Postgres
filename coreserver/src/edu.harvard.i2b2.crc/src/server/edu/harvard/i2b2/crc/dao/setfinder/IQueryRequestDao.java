@@ -35,6 +35,13 @@ public interface IQueryRequestDao {
 	 * @param Map projectParamMap
 	 */
 	public void setProjectParam(Map projectParamMap) ; 
+	
+	
+	/**
+	 * set the large text value constrain
+	 * @param allowLargeTextValueConstrainFlag
+	 */
+	public void setAllowLargeTextValueConstrainFlag(boolean allowLargeTextValueConstrainFlag) ;
 		
 	
 }

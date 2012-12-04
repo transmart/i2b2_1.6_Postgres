@@ -98,7 +98,7 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 				query = conn.prepareStatement(finalSql);
 				ArrayDescriptor desc = ArrayDescriptor.createDescriptor(
 						"QT_PDO_QRY_STRING_ARRAY", conn1);
-				
+
 				oracle.sql.ARRAY paramArray = new oracle.sql.ARRAY(desc, conn1,
 						encounterNumList.toArray(new String[] {}));
 				query.setArray(1, paramArray);
@@ -110,7 +110,7 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 				// execute sql
 				log.debug("creating temp table");
 				java.sql.Statement tempStmt = conn.createStatement();
-					
+
 				uploadTempTable(tempStmt, encounterNumList);
 				String finalSql = "SELECT "
 						+ selectClause
@@ -149,7 +149,6 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 				resultSet = query.executeQuery();
 			}
 
-
 			RPDRPdoFactory.EidBuilder eidBuilder = new RPDRPdoFactory.EidBuilder(
 					detailFlag, blobFlag, statusFlag);
 			eidSet = buildEidSetFromResultSet(resultSet, eidBuilder);
@@ -168,7 +167,7 @@ public class PdoQueryEidDao extends CRCDAO implements IPdoQueryEidDao {
 				deleteTempTable(
 						conn,
 						SQLServerFactRelatedQueryHandler.TEMP_PDO_INPUTLIST_TABLE);
-			} 
+			}
 			try {
 				JDBCUtil.closeJdbcResource(null, query, conn);
 
