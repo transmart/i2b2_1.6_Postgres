@@ -2,6 +2,7 @@ gensrc
 genlib
 dist
 velocity.log
+velocity.log.*
 lib
 report
 classes

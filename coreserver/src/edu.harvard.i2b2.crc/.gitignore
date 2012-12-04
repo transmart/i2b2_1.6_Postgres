@@ -2,3 +2,4 @@ gensrc
 genlib
 dist
 velocity.log
+velocity.log.*
