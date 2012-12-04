@@ -29,7 +29,7 @@ in any order, or choose which modules to build.
   	(you can ignore the tomcat setting)
 	jboss.home=YOUR_JBOSS_HOME_DIR
 	axis2.war.name=i2b2.war
-  Edit etc/jboss/pm-ds..xml to reflect your postgreSQL install
+  Edit etc/jboss/pm-ds.xml to reflect your postgreSQL install
     you may have to modify: connection-url, user-name, and password
   ant -f master_build.xml clean build-all deploy
 
@@ -41,6 +41,8 @@ in any order, or choose which modules to build.
 	jboss.home=YOUR_JBOSS_HOME_DIR
 	axis2.war.name=i2b2.war
   Edit the etc/jboss/ont-ds.xml and configure your data sources
+    you may have to modify: connection-url, user-name, and password
+    changes may be necessary for: i2b2hive, i2b2metadata, and i2b2metadata2
   ant -f master_build.xml clean build-all deploy
 
 4. deploy CRC module

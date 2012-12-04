@@ -12,9 +12,9 @@
 	<local-tx-datasource>
       <jndi-name>PMBootStrapDS</jndi-name>      
       <driver-class>org.postgresql.Driver</driver-class>
-      <connection-url>jdbc:postgresql://192.168.40.107:5432/rc_1_6_4_i2b2pm</connection-url>
+      <connection-url>jdbc:postgresql://localhost:5432/i2b2pm</connection-url>
       <user-name>i2b2pm</user-name>
-      <password>demouser</password>
+      <password>i2b2pm</password>
       <metadata>
         <type-mapping>PostgreSQL</type-mapping>
       </metadata>
