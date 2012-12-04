@@ -1,0 +1,8 @@
+This archive contains modification needed to support i2b2 on PostgreSQL for tranSMART.
+
+demodata - scrips for building the postgres version of the demo data
+coreserver - source files for building the core i2b2 modules used by tranSMART
+
+see demodata/src/src/edu.harvard.i2b2.data/Release_1-6/NewInstall/Data load instructions.docx
+and coreserver/src/README.txt
+
