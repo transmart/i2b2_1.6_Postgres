@@ -3,6 +3,7 @@
 *.jar
 .idea
 *.iml
+*.swp
 */target/*
 */generated/*
 target/*
