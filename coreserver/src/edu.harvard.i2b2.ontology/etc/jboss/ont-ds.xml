@@ -13,7 +13,7 @@
     <local-tx-datasource>
       <jndi-name>OntologyBootStrapDS</jndi-name>      
       <driver-class>org.postgresql.Driver</driver-class>
-      <connection-url>jdbc:postgresql://localhost:5432/i2b2hive</connection-url>
+      <connection-url>jdbc:postgresql://localhost:5432/transmart</connection-url>
       <user-name>i2b2hive</user-name>
       <password>i2b2hive</password>
       <metadata>
@@ -43,17 +43,23 @@
    <local-tx-datasource>
       <jndi-name>OntologyDemoDS</jndi-name>      
       <driver-class>org.postgresql.Driver</driver-class>
-      <connection-url>jdbc:postgresql://localhost:5432/i2b2metadata</connection-url>
+      <connection-url>jdbc:postgresql://localhost:5432/transmart</connection-url>
       <user-name>i2b2metadata</user-name>
       <password>i2b2metadata</password>
+       <metadata>
+           <type-mapping>PostgreSQL</type-mapping>
+       </metadata>
     </local-tx-datasource>
 
 	<local-tx-datasource>
       <jndi-name>OntologyDemo2DS</jndi-name>      
       <driver-class>org.postgresql.Driver</driver-class>
-      <connection-url>jdbc:postgresql://localhost:5432/i2b2metadata2</connection-url>
+      <connection-url>jdbc:postgresql://localhost:5432/transmart</connection-url>
 	  <user-name>i2b2metadata</user-name>
-      <password>i2b2metadata</password>      
+      <password>i2b2metadata</password>
+        <metadata>
+            <type-mapping>PostgreSQL</type-mapping>
+        </metadata>
     </local-tx-datasource>
    
      <!-- sample oracle project data source   
