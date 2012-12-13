@@ -127,7 +127,7 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 
 		/* smuniraju
 		QtQueryInstance queryInstance = (QtQueryInstance) jdbcTemplate
-				.queryForObject(sql, new Object[] { queryInstanceId },
+				.queryForObject(sql, new Object[] { Integer.valueOf(queryInstanceId) },
 						queryInstanceMapper);
 		*/
 		QtQueryInstance queryInstance = (QtQueryInstance) jdbcTemplate
@@ -185,7 +185,8 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 					queryInstance.getBatchMode(),
 					queryInstance.getEndDate(),
 					statusTypeId,
-					Integer.valueOf(queryInstance.getQueryInstanceId()) });
+					Integer.valueOf(queryInstance.getQueryInstanceId())
+					});
 				} else { 
 					//update rest of the fields
 					String sql = "UPDATE "
@@ -309,11 +310,10 @@ public class QueryInstanceSpringDao extends CRCDAO implements IQueryInstanceDao 
 				+ getDbSchemaName()
 				+ "QT_QUERY_INSTANCE set "
 				+ messageUpdate + " where query_instance_id = ? ";
-		jdbcTemplate.update(sql, new Object[] {
-				
-				(message == null) ? "" : 
-						message, Integer.valueOf(queryInstanceId) });
-		
+		jdbcTemplate.update(sql, 
+				new Object[] {				
+					(message == null) ? "" : message, 
+					Integer.valueOf(queryInstanceId) });
 	}
 	
 	private static class SaveQueryInstance extends SqlUpdate {

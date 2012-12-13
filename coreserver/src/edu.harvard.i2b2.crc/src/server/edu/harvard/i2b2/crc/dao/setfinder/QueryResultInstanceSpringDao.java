@@ -372,7 +372,7 @@ public class QueryResultInstanceSpringDao extends CRCDAO implements
 					+ "(RESULT_INSTANCE_ID, QUERY_INSTANCE_ID, RESULT_TYPE_ID, SET_SIZE,START_DATE,END_DATE,STATUS_TYPE_ID,DELETE_FLAG) "
 					+ "VALUES (?,?,?,?,?,?,?,?)";
 				SEQUENCE_POSTGRES = "select nextval('QT_SQ_QRI_QRIID')";
-                declareParameter(new SqlParameter(Types.INTEGER));
+				declareParameter(new SqlParameter(Types.INTEGER));
 				return;
 			}
 			

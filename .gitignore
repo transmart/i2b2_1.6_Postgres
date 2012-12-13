@@ -8,3 +8,7 @@
 */generated/*
 target/*
 generated/*
+bin/*
+.classpath
+.project
+.settings
