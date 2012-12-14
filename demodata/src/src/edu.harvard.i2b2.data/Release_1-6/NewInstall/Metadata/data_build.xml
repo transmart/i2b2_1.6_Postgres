@@ -15,7 +15,7 @@ $Id: data_build.xml,v 1.5 2010/06/04 15:33:06 lcp5 Exp $
 		<path id="classpath">
 			<pathelement location="../ojdbc14.jar" />
 			<pathelement location="../sqljdbc.jar"/>
-			<pathelement location="../postgresql-9.0-801.jdbc4.jar"/>
+			<pathelement location="../postgresql-9.1-902.jdbc4.jar"/>
 		</path>
 	</target>
 
