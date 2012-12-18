@@ -206,14 +206,21 @@ public class BuildTempTableSql extends CRCDAO {
 	public String buildDimensionSql(ConceptType conceptType) {
 		String dimensionSql = "";
 		// if patient list
-
-		dimensionSql = conceptType.getFacttablecolumn() + " IN (select "
+		// This change may only work for postgresql version currently.
+		// To make it for all database, dataSource can be used to distinguish
+		// between different dbs
+		/*dimensionSql = conceptType.getFacttablecolumn() + " IN (select "
 				+ conceptType.getFacttablecolumn() + " from "
 				+ getDbSchemaName() + conceptType.getTablename() + "  "
 				+ noLockSqlServer + " where " + conceptType.getColumnname()
 				+ " " + conceptType.getOperator() + " "
-				+ conceptType.getDimcode() + ")";
-
+				+ conceptType.getDimcode() + ")";*/
+		dimensionSql = conceptType.getFacttablecolumn() + " IN (select "
+				+ conceptType.getFacttablecolumn() + " from "
+				+ getDbSchemaName() + conceptType.getTablename() + "  "
+				+ noLockSqlServer + " where replace(" + conceptType.getColumnname()
+				+ ", '\\', '/') " + conceptType.getOperator() + " replace(\'"
+				+ conceptType.getDimcode() + "\', '\\', '/'))";
 		return dimensionSql;
 	}
 
