@@ -28,8 +28,8 @@
 
 
 	<bean id="TestDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
-		<property name="url" value="jdbc:oracle:thin:@localhost:1521:XE"/>
+		<property name="driverClassName" value="org.postgresql.Driver"/>
+		<property name="url" value="jdbc:postgresql://localhost:5432/transmart"/>
 		<property name="username" value="i2b2demodata"/>
 		<property name="password" value="i2b2demodata"/>
 	</bean>
@@ -37,16 +37,9 @@
 	
 	<bean id="LoaderLookupDS" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
 		<property name="driverClassName" value="org.postgresql.Driver"/>
-		<property name="url" value="jdbc:postgresql://192.168.40.107:5432/rc_1_6_4_i2b2hive"/>
+		<property name="url" value="jdbc:postgresql://localhost:5432/transmart"/>
 		<property name="username" value="i2b2hive"/>
-		<property name="password" value="demouser"/>
+		<property name="password" value="i2b2hive"/>
 	</bean>
 	
-	<!--
-	<bean id="LoaderLookupDS" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
-		<property name="url" value="jdbc:oracle:thin:@localhost:1521:XE"/>
-		<property name="username" value="i2b2hive"/>
-		<property name="password" value="demouser"/>
-	</bean>-->
 </beans>

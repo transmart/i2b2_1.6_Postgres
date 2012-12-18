@@ -15,10 +15,10 @@
 <datasources>
   <local-tx-datasource>
     <jndi-name>DefaultDS</jndi-name>
-    <connection-url>jdbc:postgresql://192.168.40.107:5432/rc_1_6_4_i2b2hive</connection-url>
+    <connection-url>jdbc:postgresql://localhost:5432/transmart</connection-url>
     <driver-class>org.postgresql.Driver</driver-class>
     <user-name>i2b2hive</user-name>
-    <password>demouser</password>
+    <password>i2b2hive</password>
     <idle-timeout-minutes>1</idle-timeout-minutes>
 	<set-tx-query-timeout>true</set-tx-query-timeout>
       <metadata>

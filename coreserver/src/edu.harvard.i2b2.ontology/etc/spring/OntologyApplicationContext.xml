@@ -19,10 +19,10 @@
  </bean>
  
   <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-    <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
-    <property name="url" value="jdbc:oracle:thin:@localhost:1521:xe"/>
-    <property name="username" value="metadata_uname"/>
-    <property name="password" value="metadata_password"/>
+    <property name="driverClassName" value="org.postgresql.Driver"/>
+    <property name="url" value="jdbc:postgresql://localhost:5432/transmart"/>
+    <property name="username" value="metadata"/>
+    <property name="password" value="metadata"/>
     <property name="defaultAutoCommit" value="false"/>
     <property name="defaultReadOnly" value="true"/>
   </bean>
