@@ -215,6 +215,15 @@ public class BuildTempTableSql extends CRCDAO {
 				+ noLockSqlServer + " where " + conceptType.getColumnname()
 				+ " " + conceptType.getOperator() + " "
 				+ conceptType.getDimcode() + ")";*/
+		// This modification seems like only a temporary patch to fix bugs from
+		// the different syntax between oracle and postgresql
+		 
+		 
+		String dimcode = conceptType.getDimcode();
+		while (dimcode.contains("\\\\") || dimcode.contains("\'")) {
+			dimcode = dimcode.replace("\\\\", "\\");
+			dimcode = dimcode.replace("\'", "");
+		}
 		dimensionSql = conceptType.getFacttablecolumn() + " IN (select "
 				+ conceptType.getFacttablecolumn() + " from "
 				+ getDbSchemaName() + conceptType.getTablename() + "  "
