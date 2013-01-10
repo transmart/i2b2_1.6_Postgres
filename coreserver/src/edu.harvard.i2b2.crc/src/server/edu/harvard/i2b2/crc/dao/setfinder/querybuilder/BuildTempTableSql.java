@@ -229,7 +229,7 @@ public class BuildTempTableSql extends CRCDAO {
 				+ getDbSchemaName() + conceptType.getTablename() + "  "
 				+ noLockSqlServer + " where replace(" + conceptType.getColumnname()
 				+ ", '\\', '/') " + conceptType.getOperator() + " replace(\'"
-				+ conceptType.getDimcode() + "\', '\\', '/'))";
+				+ dimcode + "\', '\\', '/'))";
 		return dimensionSql;
 	}
 
