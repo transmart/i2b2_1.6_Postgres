@@ -992,7 +992,46 @@ public class ConceptDao extends JdbcDaoSupport {
 					// c_metadataxml
 					String c_xml = null;
 					if((dbType).equals("POSTGRES")) {
-						c_xml = rs.getString("c_metadataxml");
+						/*
+						 * @author wsc
+						 * mimic oracle code to set metadataxml. I hope the web client could understand the data type of a concept.
+						 */
+						//c_xml = rs.getString("c_metadataxml");
+						//log.debug("wsc c_metadataxml is " + c_xml);
+
+						if(rs.getString("c_metadataxml") != null){		
+							try {
+								c_xml = rs.getString("c_metadataxml");
+							} catch (SQLException e) {
+								log.error(e.getMessage());
+		            			child.setMetadataxml(null);
+							}
+							if ((c_xml != null) && (c_xml.trim().length() > 0)&&(!c_xml.equals("(null)"))) {
+								SAXBuilder parser = new SAXBuilder();
+								java.io.StringReader xmlStringReader = new java.io.StringReader(c_xml);
+								Element rootElement = null;
+								try {
+									org.jdom.Document metadataDoc = parser.build(xmlStringReader);
+									org.jdom.output.DOMOutputter out = new DOMOutputter(); 
+									Document doc = out.output(metadataDoc);
+									rootElement = doc.getDocumentElement();
+								} catch (JDOMException e) {
+									log.error(e.getMessage());
+			            			child.setMetadataxml(null);
+		            			} catch (IOException e1) {
+			            			log.error(e1.getMessage());
+			            			child.setMetadataxml(null);
+								}
+		            			if (rootElement != null) {
+		            				XmlValueType xml = new XmlValueType();
+		            				xml.getAny().add(rootElement);
+		            				child.setMetadataxml(xml);
+		            			}
+							} else {
+								child.setMetadataxml(null);
+							}
+						}	
+						/*********************************END*********************************/
 					} else {
 						if(rs.getClob("c_metadataxml") != null){
 							// String c_xml = null;
